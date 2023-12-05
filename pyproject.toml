@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "WPRO_wip"
+version = "0.1"
+readme = "README.md"
+license = "BSD-2-Clause"
+homepage = "https://github.com/monash-emu/WPRO_wip"
+repository = "https://github.com/monash-emu/WPRO_wip"
+documentation = "https://github.com/monash-emu/WPRO_wip"
+keywords = [
+    "covid19",
+    "summerepi"
+]
+description = "Works in progress towards execution of our 2023/24 contract with WPRO to support Malaysia, the Philippines and Vietnam"
+authors = ["James Trauer <james.trauer@monash.edu>"]
+packages = [
+    {include = "inputs"},
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8.0, <4.0.0"
+estival = "==0.4.9"
+kaleido = "==0.2.1"
+pylatex = "==1.4.1"
+summerepi2 = ">=1.3.0"
+tables = "^3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
