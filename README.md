@@ -1,7 +1,6 @@
-# WPRO_wip
-Work in progress/scratchpad for WPRO contract
+# EMU 2023 Agreement for Performance of Work with WHO Western Pacific Regional Office
 
-## Notebooks
+## Notebooks recapping materials previous introduced
 [Simple SEIR model](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/seir_model.ipynb)
 
 [Heterogeneous mixing](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/hetero_mix.ipynb)
