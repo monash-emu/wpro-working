@@ -1,17 +1,22 @@
 [tool.poetry]
-name = "WPRO_wip"
+name = "wpro_working"
 version = "0.1"
 readme = "README.md"
 license = "BSD-2-Clause"
-homepage = "https://github.com/monash-emu/WPRO_wip"
-repository = "https://github.com/monash-emu/WPRO_wip"
-documentation = "https://github.com/monash-emu/WPRO_wip"
+homepage = "https://github.com/monash-emu/wpro_working"
+repository = "https://github.com/monash-emu/wpro_working"
+documentation = "https://github.com/monash-emu/wpro_working"
 keywords = [
     "covid19",
     "summerepi"
 ]
 description = "Works in progress towards execution of our 2023/24 contract with WPRO to support Malaysia, the Philippines and Vietnam"
-authors = ["James Trauer <james.trauer@monash.edu>"]
+authors = [
+    "James Trauer <james.trauer@monash.edu>",
+    "David Shipman <david.shipman@monash.edu>",
+    "Angus Hughes <angus.hughes@monash.edu>",
+    "Romain Ragonnet <romain.ragonnet@monash.edu>",
+]
 packages = [
     {include = "inputs"},
 ]
