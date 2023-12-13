@@ -8,3 +8,5 @@
 [Serial latent compartments](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/serial_latent_comps.ipynb)
 
 [Age-specific infection fatality rate](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/age_specific_ifr.ipynb)
+
+[Child susceptibility](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/child_suscept.ipynb)
