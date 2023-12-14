@@ -1,14 +1,14 @@
 # EMU 2023 Agreement for Performance of Work with WHO Western Pacific Regional Office
 
 ## Notebooks recapping materials previous introduced
-[Simple SEIR model](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/seir_model.ipynb)
+[Simple SEIR model](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/01-seir-model.ipynb)
 
-[Heterogeneous mixing](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/hetero_mix.ipynb)
+[Child susceptibility](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/02-child-suscept.ipynb)
 
-[Serial latent compartments](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/serial_latent_comps.ipynb)
+[Heterogeneous mixing](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/03-hetero-mix.ipynb)
 
-[Age-specific infection fatality rate](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/age_specific_ifr.ipynb)
+[Serial latent compartments](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/04-serial_latent_comps.ipynb)
 
-[Child susceptibility](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/child_suscept.ipynb)
+[Age-specific infection fatality rate](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/05-age-specific-ifr.ipynb)
 
-[Multiple strains](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/multi_strain.ipynb)
+[Multiple strains](https://colab.research.google.com/github/monash-emu/WPRO_wip/blob/main/recap/06-multi-strain.ipynb)
