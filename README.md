@@ -30,7 +30,7 @@ The notebooks listed above provide a brief introduction to participants in our
 2023/2024 capacity building program.
 
 Further resources are available through our main 
-[homepage](https://github.com/monash-emu/monash-emu.github.io).
+[homepage](https://monash-emu.github.io).
 In particular, we draw your attention to:
 - Full online [documentation](https://summer2.readthedocs.io/en/latest/) of the `summer` platform
 - Our [textbook](https://github.com/monash-emu/summer-textbook) of infectious disease modelling using `summer`
