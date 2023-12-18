@@ -24,3 +24,13 @@ To interact with the code from this repository on your local computer, you would
 - [Git clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) the repository
 - [Install jupyter](https://jupyter.org/install), or use an IDE with integrated notebook support like [Visual Studio Code](https://code.visualstudio.com/download)
 Please familiarise yourself with these tools before setting up your environment.
+
+## Other resources
+The notebooks listed above provide a brief introduction to participants in our
+2023/2024 capacity building program.
+
+Further resources are available through our main 
+[homepage](https://monash-emu.github.io).
+In particular, we draw your attention to:
+- Full online [documentation](https://summer2.readthedocs.io/en/latest/) of the `summer` platform
+- Our [textbook](https://github.com/monash-emu/summer-textbook) of infectious disease modelling using `summer`
