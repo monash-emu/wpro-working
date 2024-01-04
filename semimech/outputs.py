@@ -1,4 +1,5 @@
 from typing import Dict
+import numpy as np
 import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
@@ -8,8 +9,22 @@ from collections import namedtuple
 Outputs = namedtuple('outputs', ['incidence', 'suscept', 'r_t'])
 
 
-def plot_output_fit(targets: Dict[int, float], result, process_vals, n_times: int):
+def plot_output_fit(
+    targets: Dict[int, float], 
+    result: Outputs, 
+    process_vals: np.array, 
+    n_times: int,
+) -> go.Figure:
     """Plot results from a fitting attempt against the target data and show estimated random process.
+
+    Args:
+        targets: Data targeted
+        result: Epidemiological outputs by the renewal process
+        process_vals: Estimated non-mechanistic variation in infectiousness
+        n_times: Number of simulated time points
+
+    Returns:
+        Interactive figure
     """
     fitted, suscept, r_t = result
     model_times = pd.Series(range(n_times))

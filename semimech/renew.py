@@ -3,8 +3,24 @@ import numpy as np
 from outputs import Outputs
 
 
-def renew_basic(gen_time_densities, process_vals, pop, seed, n_times) -> Outputs:
-    """The renewal process.
+def renew_basic(
+    gen_time_densities: np.array, 
+    process_vals: np.array, 
+    pop: float, 
+    seed: float, 
+    n_times: int,
+) -> Outputs:
+    """Implementation of the renewal process.
+
+    Args:
+        gen_time_densities: Incremental CDF values for the generation time
+        process_vals: The non-mechanistic adjustment process to the reproduction number
+        pop: The population size
+        seed: Starting infectious seed
+        n_times: Number of time points for simulation
+
+    Returns:
+        Standard output arrays
     """
     incidence = np.zeros(n_times)
     suscept = np.zeros(n_times)
@@ -23,8 +39,28 @@ def renew_basic(gen_time_densities, process_vals, pop, seed, n_times) -> Outputs
     return Outputs(incidence, suscept, r_t)
 
 
-def renew_trunc_gen(gen_time_densities, process_vals, pop, seed, n_times, gen_times_end) -> Outputs:
-    """The renewal process.
+def renew_trunc_gen(
+    gen_time_densities: np.array, 
+    process_vals: np.array, 
+    pop: float, 
+    seed: float, 
+    n_times: int,
+    gen_times_end: int,
+) -> Outputs:
+    """Implementation of the renewal process,
+    with option to truncate the generation interval distribution,
+    because density values have fallen low enough to be ignored.
+
+    Args:
+        gen_time_densities: Incremental CDF values for the generation time
+        process_vals: The non-mechanistic adjustment process to the reproduction number
+        pop: The population size
+        seed: Starting infectious seed
+        n_times: Number of time points for simulation
+        gen_times_end: Index for the last generation time of interest
+
+    Returns:
+        Standard output arrays
     """
     incidence = np.zeros(n_times)
     suscept = np.zeros(n_times)
