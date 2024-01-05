@@ -1,6 +1,6 @@
 import numpy as np
 
-from outputs import Outputs
+from emu_renewal.outputs import Outputs
 
 
 def renew_basic(
