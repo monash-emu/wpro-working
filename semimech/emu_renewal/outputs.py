@@ -13,6 +13,7 @@ def plot_output_fit(
     result: Outputs, 
     process_vals: np.array, 
     n_times: int,
+    cdr: float=1.0,
 ) -> go.Figure:
     """Plot results from a fitting attempt against the target data and show estimated random process.
 
@@ -29,7 +30,7 @@ def plot_output_fit(
     model_times = pd.Series(range(n_times))
     fig = make_subplots(3, 1, shared_xaxes=True, vertical_spacing=0.05, subplot_titles=['incidence', 'reproduction number', 'susceptibles'])
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode='markers', name='targets'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=model_times, y=fitted, name='model'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=model_times, y=fitted * cdr, name='model'), row=1, col=1)
     fig.add_trace(go.Scatter(x=model_times, y=process_vals, name='transmission potential'), row=2, col=1)
     fig.add_trace(go.Scatter(x=model_times, y=r_t, name='Rt'), row=2, col=1)
     fig.add_trace(go.Scatter(x=model_times, y=suscept, name='susceptibles'), row=3, col=1)
