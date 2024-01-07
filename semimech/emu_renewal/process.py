@@ -1,6 +1,7 @@
 from typing import List
 import numpy as np
 import pandas as pd
+from scipy.interpolate import CubicSpline
 
 
 def get_interp_vals_over_model_time(
@@ -37,3 +38,19 @@ def get_step_values_over_model_time(
         process_req_index = breaks_series[breaks_series <= time].index[-1]
         process_vals.append(req[process_req_index])
     return process_vals
+
+def get_spline_values_over_model_time(
+    req: List[float], 
+    n_times: int
+) -> list:
+    """Another standard interpolation option, works better.
+
+    Args:
+        req: Requested values
+        n_times: Length of simulation, which the request will be evenly spread over
+
+    Returns:
+        Values for each of the n time values of the simulation period
+    """
+    process_func = CubicSpline(np.linspace(0.0, n_times, len(req)), req)
+    return process_func(range(n_times))
