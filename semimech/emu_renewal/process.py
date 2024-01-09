@@ -5,52 +5,31 @@ from scipy.interpolate import CubicSpline
 
 
 def get_interp_vals_over_model_time(
-    req: List[float], 
-    n_times: int,
-) -> np.array:
+    req_x_vals: List[float],
+    req_y_vals: List[float], 
+) -> callable:
     """Linear interpolation at requested values at regular intervals over simulation period.
 
-    Args:
-        req: Requested values
-        n_times: Length of simulation, which the request will be evenly spread over
+    # Args:
+    #     req: Requested values
+    #     n_times: Length of simulation, which the request will be evenly spread over
 
-    Returns:
-        Values for each of the n time values of the simulation period
+    # Returns:
+    #     Values for each of the n time values of the simulation period
     """
-    return np.interp(range(n_times), np.linspace(0.0, n_times, len(req)), req)
-
-def get_step_values_over_model_time(
-    req: List[float], 
-    n_times: int
-) -> list:
-    """Another option, but this one seems to work extremely poorly in practice.
-
-    Args:
-        req: Requested values
-        n_times: Length of simulation, which the request will be evenly spread over
-
-    Returns:
-        Values for each of the n time values of the simulation period
-    """
-    breaks_series = pd.Series(np.linspace(0.0, n_times, len(req) + 1))
-    process_vals = []
-    for time in range(n_times):
-        process_req_index = breaks_series[breaks_series <= time].index[-1]
-        process_vals.append(req[process_req_index])
-    return process_vals
+    return lambda x: np.interp(x, req_x_vals, req_y_vals)
 
 def get_spline_values_over_model_time(
-    req: List[float], 
-    n_times: int
-) -> list:
+    req_x_vals: List[float],
+    req_y_vals: List[float], 
+) -> callable:
     """Another standard interpolation option, works better.
 
-    Args:
-        req: Requested values
-        n_times: Length of simulation, which the request will be evenly spread over
+    # Args:
+    #     req: Requested values
+    #     n_times: Length of simulation, which the request will be evenly spread over
 
-    Returns:
-        Values for each of the n time values of the simulation period
+    # Returns:
+    #     Values for each of the n time values of the simulation period
     """
-    process_func = CubicSpline(np.linspace(0.0, n_times, len(req)), req)
-    return process_func(range(n_times))
+    return CubicSpline(req_x_vals, req_y_vals)
