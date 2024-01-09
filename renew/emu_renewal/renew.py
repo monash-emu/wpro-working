@@ -1,6 +1,7 @@
 import numpy as np
 
 from .outputs import Outputs
+from .process import get_piecewise_cosine
 
 
 def renew_basic(
@@ -79,4 +80,32 @@ def renew_trunc_gen(
         incidence[t] = contribution_by_day.sum() * r_t[t]  # Incidence for this time point
         suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)  # Zero out any small negative susceptible values
 
+    return Outputs(incidence, suscept, r_t)
+
+def renew_taper_seed(
+    gen_time_densities: np.array, 
+    process_vals: np.array, 
+    pop: float, 
+    seed_peak: float, 
+    n_times: int,
+    run_in: int,
+) -> Outputs:
+    incidence = np.zeros(n_times)
+    suscept = np.zeros(n_times)
+    r_t = np.zeros(n_times)
+    
+    incidence[0] = seed_peak
+    suscept[0] = pop - seed_peak
+    r_t[0] = process_vals[0] * suscept[0] / pop
+    
+    seed_func = get_piecewise_cosine([0.0, run_in], [seed_peak, 0.0])
+    
+    for t in range(1, n_times):
+        r_t[t] = process_vals[t] * suscept[t - 1] / pop
+        contribution_by_day = incidence[:t] * gen_time_densities[:t][::-1]
+        seeding_component = seed_func(t)
+        renewal_component = contribution_by_day.sum() * r_t[t]
+        incidence[t] = seeding_component + renewal_component
+        suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
+        
     return Outputs(incidence, suscept, r_t)
