@@ -2,8 +2,9 @@ from typing import Dict
 import numpy as np
 from scipy.stats import gamma
 
+
 def get_gamma_params_from_mean_sd(
-    req_mean: float, 
+    req_mean: float,
     req_sd: float,
 ) -> Dict[str, float]:
     """Calculate the parameters to construct a gamma distribution
@@ -22,11 +23,11 @@ def get_gamma_params_from_mean_sd(
     return {'a': a, 'scale': scale}
 
 def get_gamma_densities_from_params(
-    mean: float, 
-    sd: float, 
+    mean: float,
+    sd: float,
     n_times: int,
 ) -> np.array:
-    """Get integrals over integer differences in gamma distribution 
+    """Get integrals over integer differences in gamma distribution
     for simulation duration.
 
     Args:

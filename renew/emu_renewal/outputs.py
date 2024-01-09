@@ -9,11 +9,11 @@ Outputs = namedtuple('outputs', ['incidence', 'suscept', 'r_t'])
 
 
 def plot_output_fit(
-    targets: pd.Series, 
-    result: Outputs, 
-    process_vals: np.array, 
+    targets: pd.Series,
+    result: Outputs,
+    process_vals: np.array,
     n_times: int,
-    cdr: float=1.0,
+    cdr: float = 1.0,
 ) -> go.Figure:
     """Plot results from a fitting attempt against the target data and show estimated random process.
 
