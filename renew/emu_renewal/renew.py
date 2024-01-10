@@ -125,7 +125,7 @@ def renew_taper_seed(
         'consists of multiplying the incidence values for the preceding days ' \
         'by the reversed generation time distribution values. ' \
         'This follows a standard formula, ' \
-        'described elsewhere by several groups, i.e. ' \
+        'described elsewhere by several groups,[@cori2013; @faria2021] i.e. ' \
         '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n' \
         '$R_t$ is calculated as the product of the proportion ' \
         'of the population remaining susceptible ' \
