@@ -121,7 +121,7 @@ def renew_taper_seed(
         f'over the first {seed_duration} days of the simuilation. '
     seed_func = get_piecewise_cosine([seed_peak, 0.0], [0.0, seed_duration])
 
-    renew_desc = '\n\n### Renewal process\n\n' \
+    renew_desc = '\n\n### Renewal process\n' \
         'Calculation of the renewal process ' \
         'consists of multiplying the incidence values for the preceding days ' \
         'by the reversed generation time distribution values. ' \
