@@ -99,6 +99,8 @@ def renew_taper_seed(
     suscept[0] = pop - seed_peak
     r_t[0] = process_vals[0] * suscept[0] / pop
 
+    description = f'Here is my description, including programmatically generated variables like the number of times {n_times}.'
+
     seed_func = get_piecewise_cosine([0.0, run_in], [seed_peak, 0.0])
 
     for t in range(1, n_times):
@@ -109,4 +111,4 @@ def renew_taper_seed(
         incidence[t] = seeding_component + renewal_component
         suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
-    return Outputs(incidence, suscept, r_t)
+    return Outputs(incidence, suscept, r_t), description
