@@ -1,4 +1,7 @@
 notebooks/*
 */.ipynb_checkpoints/*
 *.pyc
+*.pdf
+*.aux
+*.log
 .DS_Store

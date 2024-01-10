@@ -1,7 +1,10 @@
 import numpy as np
+from collections import namedtuple
 
-from .outputs import Outputs
 from .process import get_piecewise_cosine
+
+
+Outputs = namedtuple('outputs', ['incidence', 'suscept', 'r_t', 'description'])
 
 
 def renew_basic(
@@ -37,7 +40,7 @@ def renew_basic(
         incidence[t] = contribution_by_day.sum() * r_t[t]  # Incidence
         suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)  # Zero out any small negative susceptible values
         
-    return Outputs(incidence, suscept, r_t)
+    return Outputs(incidence, suscept, r_t, '')
 
 
 def renew_trunc_gen(
@@ -80,7 +83,7 @@ def renew_trunc_gen(
         incidence[t] = contribution_by_day.sum() * r_t[t]  # Incidence for this time point
         suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)  # Zero out any small negative susceptible values
 
-    return Outputs(incidence, suscept, r_t)
+    return Outputs(incidence, suscept, r_t, '')
 
 
 def renew_taper_seed(
@@ -89,8 +92,21 @@ def renew_taper_seed(
     pop: float,
     seed_peak: float,
     n_times: int,
-    run_in: int,
+    seed_duration: int,
 ) -> Outputs:
+    """Renewal process as described below.
+
+    Args:
+        gen_time_densities: Generation time densities by day
+        process_vals: Non-mechanistic variation in reproduction number
+        pop: Starting population
+        seed_peak: Peak starting seed value
+        n_times: Number of time points for analysis
+        seed_duration: Time for seeding function to decay to zero
+
+    Returns:
+        Collection of renewal process calculations and description
+    """
     incidence = np.zeros(n_times)
     suscept = np.zeros(n_times)
     r_t = np.zeros(n_times)
@@ -99,10 +115,25 @@ def renew_taper_seed(
     suscept[0] = pop - seed_peak
     r_t[0] = process_vals[0] * suscept[0] / pop
 
-    description = f'Here is my description, including programmatically generated variables like the number of times {n_times}.'
+    seed_desc = 'The model was seeded using a translated, ' \
+        'scaled cosine function that declines from ' \
+        f'a starting value of {round(seed_peak)} to zero ' \
+        f'over the first {seed_duration} days of the simuilation. '
+    seed_func = get_piecewise_cosine([seed_peak, 0.0], [0.0, seed_duration])
 
-    seed_func = get_piecewise_cosine([0.0, run_in], [seed_peak, 0.0])
-
+    renew_desc = 'Calculation of the renewal process ' \
+        'consists of multiplying the incidence values for the preceding days ' \
+        'by the reversed generation time distribution values. ' \
+        'This follows a standard formula, ' \
+        'described elsewhere by several groups, i.e. ' \
+        '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n' \
+        '$R_t$ is calculated as the product of the proportion ' \
+        'of the population remaining susceptible ' \
+        'and the non-mechanistic random process ' \
+        'generated external to the renewal model. ' \
+        'The susceptible population is calculated by ' \
+        'subtracting the number of new incident cases from the ' \
+        'running total of susceptibles at each iteration.\n'
     for t in range(1, n_times):
         r_t[t] = process_vals[t] * suscept[t - 1] / pop
         contribution_by_day = incidence[:t] * gen_time_densities[:t][::-1]
@@ -111,4 +142,4 @@ def renew_taper_seed(
         incidence[t] = seeding_component + renewal_component
         suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
-    return Outputs(incidence, suscept, r_t), description
+    return Outputs(incidence, suscept, r_t, renew_desc + seed_desc)
