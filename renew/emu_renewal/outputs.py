@@ -31,4 +31,4 @@ def plot_output_fit(
     fig.add_trace(go.Scatter(x=model_times, y=process_vals, name='transmission potential'), row=2, col=1)
     fig.add_trace(go.Scatter(x=model_times, y=r_t, name='Rt'), row=2, col=1)
     fig.add_trace(go.Scatter(x=model_times, y=suscept, name='susceptibles'), row=3, col=1)
-    return fig.update_layout(height=800, margin={'t': 20, 'b': 5, 'l': 5, 'r': 5})
+    return fig.update_layout(margin={'t': 20, 'b': 5, 'l': 5, 'r': 5})
