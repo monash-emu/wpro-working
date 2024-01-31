@@ -1,6 +1,9 @@
 from typing import Tuple
 import numpy as np
 from scipy.interpolate import CubicSpline
+from collections import namedtuple
+
+InterpFunc = namedtuple('interpolation', ['func', 'description'])
 
 
 def get_linear_interp_func(
@@ -51,8 +54,19 @@ def get_cos_points_link(
     return cos_link
 
 
-def get_piecewise_cosine(x_vals, y_vals):
+def get_piecewise_cosine(
+    x_vals, 
+    y_vals,
+) -> InterpFunc:
     coords = list(zip(x_vals, y_vals))
+    desc = 'The interpolation function consisted of a piecewise function ' \
+        'constructed from a cosine function on domain zero to $\pi$. ' \
+        'This function was then translated and scaled vertically and horizontally ' \
+        'such that the start and end points of the cosine function ' \
+        '(at which the gradient is zero) pass through the two consecutive ' \
+        'process values. This process was repeated for each interval for interpolation. ' \
+        'This interpolation approach provides a function of time for which ' \
+        'the gradient and all higher order gradients are continuous. '
 
     def piecewise_cosine_func(x):
         start_cond = x < x_vals[0]
@@ -67,4 +81,4 @@ def get_piecewise_cosine(x_vals, y_vals):
 
         return np.piecewise(x, conds, funcs)
 
-    return np.vectorize(piecewise_cosine_func)
+    return InterpFunc(np.vectorize(piecewise_cosine_func), desc)

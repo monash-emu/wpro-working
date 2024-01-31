@@ -119,7 +119,7 @@ def renew_taper_seed(
         'scaled cosine function that declines from ' \
         f'a starting value of {round(seed_peak)} to zero ' \
         f'over the first {seed_duration} days of the simuilation. '
-    seed_func = get_piecewise_cosine([seed_peak, 0.0], [0.0, seed_duration])
+    seed_func = get_piecewise_cosine([seed_peak, 0.0], [0.0, seed_duration]).func
 
     renew_desc = '\n\n### Renewal process\n' \
         'Calculation of the renewal process ' \

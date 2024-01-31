@@ -10,7 +10,7 @@ DistDensVals = namedtuple('dist_vals', ['vals', 'description'])
 def get_gamma_params_from_mean_sd(
     req_mean: float,
     req_sd: float,
-) -> Dict[str, float]:
+) -> DistParams:
     """See desc object below.
 
     Args:
@@ -34,7 +34,7 @@ def get_gamma_densities_from_params(
     req_mean: float,
     req_sd: float,
     n_times: int,
-) -> np.array:
+) -> DistDensVals:
     """See desc object below.
 
     Args:
