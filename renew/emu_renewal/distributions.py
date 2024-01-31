@@ -1,20 +1,27 @@
-from typing import Dict
 import numpy as np
 from scipy.stats import gamma
 
 
-class GammaDens():
+class Dens():
     def __init__(self):
         pass
 
-    def get_gamma_params_from_mean_sd(self, req_mean, req_sd):
-        var = req_sd ** 2.0
-        scale = var / req_mean
-        a = req_mean / scale
+    def get_params():
+        pass
+
+    def get_densitites():
+        pass
+
+
+class GammaDens():
+    def get_params(self, mean, sd):
+        var = sd ** 2.0
+        scale = var / mean
+        a = mean / scale
         return {'a': a, 'scale': scale}
     
-    def get_gamma_densities_from_params(self, n_times, req_mean, req_sd):
-        return np.diff(gamma.cdf(range(n_times + 1), **self.get_gamma_params_from_mean_sd(req_mean, req_sd)))
+    def get_densities(self, n_times, req_mean, req_sd):
+        return np.diff(gamma.cdf(range(n_times + 1), **self.get_params(req_mean, req_sd)))
 
     def describe_dens(self):
         return '\n\n### Generation times\n' \
