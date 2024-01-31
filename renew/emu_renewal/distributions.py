@@ -11,10 +11,10 @@ class GammaDens():
         var = req_sd ** 2.0
         scale = var / req_mean
         a = req_mean / scale
-        self.parameters = {'a': a, 'scale': scale}
+        return {'a': a, 'scale': scale}
     
-    def get_gamma_densities_from_params(self, n_times):
-        return np.diff(gamma.cdf(range(n_times + 1), **self.parameters))
+    def get_gamma_densities_from_params(self, n_times, req_mean, req_sd):
+        return np.diff(gamma.cdf(range(n_times + 1), **self.get_gamma_params_from_mean_sd(req_mean, req_sd)))
 
     def describe_dens(self):
         return '\n\n### Generation times\n' \
