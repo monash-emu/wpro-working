@@ -1,42 +1,36 @@
 from typing import Tuple
 import numpy as np
 from scipy.interpolate import CubicSpline
-from collections import namedtuple
-
-InterpFunc = namedtuple('interpolation', ['func', 'description'])
 
 
-def get_linear_interp_func(
-    req_x_vals: np.array,
-    req_y_vals: np.array,
-) -> callable:
-    """Linear interpolation at requested values at regular intervals over simulation period.
-
-    Args:
-        req_x_vals: Requested x-values
-        req_y_vals: Requested y-values
-
-    Returns:
-        The function
+class InterpFunc():
+    """Abstract class for interpolation functions.
+    Primarily for use in creating non-mechanistic processes here.
     """
-    return lambda x: np.interp(x, req_x_vals, req_y_vals)
+    def __init__(self, x_vals, y_vals):
+        self.x_vals = x_vals
+        self.y_vals = y_vals
+
+    def get_interp_func(self):
+        pass
+
+    def get_description(self):
+        pass
 
 
-def get_spline_interp_func(
-    req_x_vals: np.array,
-    req_y_vals: np.array,
-) -> callable:
+class LinearInterpFunc(InterpFunc):
+    """Simple linear interpolation.
+    """
+    def get_interp_func(self):
+        return lambda x: np.interp(x, self.x_vals, self.y_vals)
+
+
+class SplineInterpFunc(InterpFunc):
     """Another standard interpolation option,
     which has advantages of being continuous with continuous gradient.
-
-    Args:
-        req_x_vals: Requested x-values
-        req_y_vals: Requested y-values
-
-    Returns:
-        The function
     """
-    return CubicSpline(req_x_vals, req_y_vals)
+    def get_interp_func(self):
+        return CubicSpline(self.x_vals, self.y_vals)
 
 
 def get_cos_points_link(
@@ -54,31 +48,31 @@ def get_cos_points_link(
     return cos_link
 
 
-def get_piecewise_cosine(
-    x_vals, 
-    y_vals,
-) -> InterpFunc:
-    coords = list(zip(x_vals, y_vals))
-    desc = 'The interpolation function consisted of a piecewise function ' \
-        'constructed from a cosine function on domain zero to $\pi$. ' \
-        'This function was then translated and scaled vertically and horizontally ' \
-        'such that the start and end points of the cosine function ' \
-        '(at which the gradient is zero) pass through the two consecutive ' \
-        'process values. This process was repeated for each interval for interpolation. ' \
-        'This interpolation approach provides a function of time for which ' \
-        'the gradient and all higher order gradients are continuous. '
+class CosInterpFunc(InterpFunc):
+    def get_interp_func(self):
+        coords = list(zip(self.x_vals, self.y_vals))
 
-    def piecewise_cosine_func(x):
-        start_cond = x < x_vals[0]
-        mid_conds = [x_vals[i] <= x < x_vals[i + 1] for i in range(len(coords) - 1)]
-        end_cond = x >= x_vals[-1]
-        conds = [start_cond] + mid_conds + [end_cond]
+        def piecewise_cosine_func(x):
+            start_cond = x < self.x_vals[0]
+            mid_conds = [self.x_vals[i] <= x < self.x_vals[i + 1] for i in range(len(coords) - 1)]
+            end_cond = x >= self.x_vals[-1]
+            conds = [start_cond] + mid_conds + [end_cond]
 
-        start_func = lambda x: y_vals[0]
-        mid_funcs = [get_cos_points_link(coords[i], coords[i + 1]) for i in range(len(coords) - 1)]
-        end_func = lambda x: y_vals[-1]
-        funcs = [start_func] + mid_funcs + [end_func]
+            start_func = lambda x: self.y_vals[0]
+            mid_funcs = [get_cos_points_link(coords[i], coords[i + 1]) for i in range(len(coords) - 1)]
+            end_func = lambda x: self.y_vals[-1]
+            funcs = [start_func] + mid_funcs + [end_func]
 
-        return np.piecewise(x, conds, funcs)
+            return np.piecewise(x, conds, funcs)
 
-    return InterpFunc(np.vectorize(piecewise_cosine_func), desc)
+        return np.vectorize(piecewise_cosine_func)
+
+    def get_description():
+        return 'The interpolation function consisted of a piecewise function ' \
+            'constructed from a cosine function on domain zero to $\pi$. ' \
+            'This function was then translated and scaled vertically and horizontally ' \
+            'such that the start and end points of the cosine function ' \
+            '(at which the gradient is zero) pass through the two consecutive ' \
+            'process values. This process was repeated for each interval for interpolation. ' \
+            'This interpolation approach provides a function of time for which ' \
+            'the gradient and all higher order gradients are continuous. '
