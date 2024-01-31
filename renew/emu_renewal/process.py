@@ -7,9 +7,8 @@ class InterpFunc():
     """Abstract class for interpolation functions.
     Primarily for use in creating non-mechanistic processes here.
     """
-    def __init__(self, x_vals, y_vals):
+    def __init__(self, x_vals):
         self.x_vals = x_vals
-        self.y_vals = y_vals
 
     def get_interp_func(self):
         pass
@@ -21,16 +20,16 @@ class InterpFunc():
 class LinearInterpFunc(InterpFunc):
     """Simple linear interpolation.
     """
-    def get_interp_func(self):
-        return lambda x: np.interp(x, self.x_vals, self.y_vals)
+    def get_interp_func(self, y_vals):
+        return lambda x: np.interp(x, self.x_vals, y_vals)
 
 
 class SplineInterpFunc(InterpFunc):
     """Another standard interpolation option,
     which has advantages of being continuous with continuous gradient.
     """
-    def get_interp_func(self):
-        return CubicSpline(self.x_vals, self.y_vals)
+    def get_interp_func(self, y_vals):
+        return CubicSpline(self.x_vals, y_vals)
 
 
 def get_cos_points_link(
@@ -49,8 +48,8 @@ def get_cos_points_link(
 
 
 class CosInterpFunc(InterpFunc):
-    def get_interp_func(self):
-        coords = list(zip(self.x_vals, self.y_vals))
+    def get_interp_func(self, y_vals):
+        coords = list(zip(self.x_vals, y_vals))
 
         def piecewise_cosine_func(x):
             start_cond = x < self.x_vals[0]
@@ -58,16 +57,16 @@ class CosInterpFunc(InterpFunc):
             end_cond = x >= self.x_vals[-1]
             conds = [start_cond] + mid_conds + [end_cond]
 
-            start_func = lambda x: self.y_vals[0]
+            start_func = lambda x: y_vals[0]
             mid_funcs = [get_cos_points_link(coords[i], coords[i + 1]) for i in range(len(coords) - 1)]
-            end_func = lambda x: self.y_vals[-1]
+            end_func = lambda x: y_vals[-1]
             funcs = [start_func] + mid_funcs + [end_func]
 
             return np.piecewise(x, conds, funcs)
 
         return np.vectorize(piecewise_cosine_func)
 
-    def get_description():
+    def get_description(self):
         return 'The interpolation function consisted of a piecewise function ' \
             'constructed from a cosine function on domain zero to $\pi$. ' \
             'This function was then translated and scaled vertically and horizontally ' \
