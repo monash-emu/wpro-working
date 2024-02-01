@@ -105,7 +105,7 @@ class RenewalModel():
     def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
         process_func = self.interp.get_interp_func(process_req)
-        process_vals_exp = np.exp(np.array(process_func(self.model_times)))
+        process_vals_exp = np.exp(process_func(self.model_times))
         
         incidence = np.zeros(self.n_times)
         suscept = np.zeros(self.n_times)
@@ -154,3 +154,36 @@ class RenewalModel():
             'undertaken in the log-transformed space. '
         
         return self.dens_obj.get_description() + renew_desc + non_mech_desc + self.interp.get_description()
+
+
+class TruncRenewalModel(RenewalModel):
+
+    def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int, gen_times_end=1000) -> tuple:
+        densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
+        process_func = self.interp.get_interp_func(process_req)
+        process_vals_exp = np.exp(process_func(self.model_times))
+        
+        incidence = np.zeros(self.n_times)
+        suscept = np.zeros(self.n_times)
+        r_t = np.zeros(self.n_times)
+
+        seed_peak = np.exp(seed)
+        incidence[0] = seed_peak
+        suscept[0] = self.pop - seed_peak
+        r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
+
+        seed_func = self.seeder.get_interp_func([seed_peak, 0.0])
+        for t in range(1, self.n_times):
+            gen_times_interest = min(t, gen_times_end)  # Truncate generation times if requested
+            inc_vals = incidence[t - gen_times_interest :t]  # Incidence series
+            gen_vals = densities[:gen_times_interest]  # Generation series
+
+            r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
+            contribution_by_day = inc_vals * gen_vals[::-1]
+            seeding_component = seed_func(t)
+            renewal_component = contribution_by_day.sum() * r_t[t]
+            incidence[t] = seeding_component + renewal_component
+            suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
+
+        return ModelResult(incidence, suscept, r_t, process_vals_exp) 
+
