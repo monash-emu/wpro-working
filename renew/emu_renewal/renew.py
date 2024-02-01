@@ -6,45 +6,8 @@ from .process import LinearInterpFunc, CosInterpFunc
 from .distributions import GammaDens
 
 
-Outputs = namedtuple('outputs', ['incidence', 'suscept', 'r_t', 'description'])
-
-
-def renew_basic(
-    gen_time_densities: np.array,
-    process_vals: np.array,
-    pop: float,
-    seed: float,
-    n_times: int,
-) -> Outputs:
-    """Implementation of the renewal process.
-
-    Args:
-        gen_time_densities: Incremental CDF values for the generation time
-        process_vals: The non-mechanistic adjustment process to the reproduction number
-        pop: The population size
-        seed: Starting infectious seed
-        n_times: Number of time points for simulation
-
-    Returns:
-        Standard output arrays
-    """
-    incidence = np.zeros(n_times)
-    suscept = np.zeros(n_times)
-    r_t = np.zeros(n_times)
-
-    incidence[0] = seed
-    suscept[0] = pop - seed
-    r_t[0] = process_vals[0] * suscept[0] / pop
-
-    for t in range(1, n_times):
-        contribution_by_day = incidence[:t] * gen_time_densities[:t][::-1]  # Product of incidence values and reversed generation times
-        r_t[t] = process_vals[t] * suscept[t - 1] / pop  # Pre-specified process by the proportion susceptible
-        incidence[t] = contribution_by_day.sum() * r_t[t]  # Incidence
-        suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)  # Zero out any small negative susceptible values
-        
-    return Outputs(incidence, suscept, r_t, '')
-
 ModelResult = namedtuple('ModelResult', ['incidence', 'suscept', 'r_t', 'process'])
+
 
 class RenewalModel():
     def __init__(self, pop, n_times, run_in, n_process_periods):
@@ -145,4 +108,3 @@ class TruncRenewalModel(RenewalModel):
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
         return ModelResult(incidence, suscept, r_t, process_vals_exp) 
-

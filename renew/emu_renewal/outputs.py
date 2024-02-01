@@ -1,8 +1,6 @@
-import numpy as np
 import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
-from .renew import Outputs
 
 
 def plot_output_fit(
