@@ -1,29 +1,72 @@
+from typing import Dict
 import numpy as np
 from scipy.stats import gamma
 
 
 class Dens():
+    """Get a probability distribution for use in
+    calculation generation times for the renewal model.
+    """
     def __init__(self):
         pass
 
     def get_params():
+        """Get the parameters for the distribution type
+        """
         pass
 
     def get_densitites():
+        """The densities for each integer increment in the distribution.
+        """
         pass
 
 
 class GammaDens():
-    def get_params(self, mean, sd):
+    """Density class for generating gamma-distributed denities.
+    """
+    def get_params(
+        self, 
+        mean: float, 
+        sd: float,
+    ) -> Dict[str, float]:
+        """See get_description
+
+        Args:
+            mean: Requested mean
+            sd: Requested standard deviation
+
+        Returns:
+            The parameters
+        """
         var = sd ** 2.0
         scale = var / mean
         a = mean / scale
         return {'a': a, 'scale': scale}
     
-    def get_densities(self, n_times, req_mean, req_sd):
+    def get_densities(
+        self, 
+        n_times: int, 
+        req_mean: float, 
+        req_sd: float,
+    ) -> np.array:
+        """See get_description
+
+        Args:
+            n_times: Number of integer increments for the calculation
+            req_mean: Requested mean
+            req_sd: Requested standard deviation
+
+        Returns:
+            The integrals of the probability density
+        """
         return np.diff(gamma.cdf(range(n_times + 1), **self.get_params(req_mean, req_sd)))
 
-    def describe_dens(self):
+    def get_description(self):
+        """Get the description of this code.
+
+        Returns:
+            The description in markdown format
+        """
         return '\n\n### Generation times\n' \
             'Generation times for each day are calculated by ' \
             'first finding the parameters needed to construct ' \
