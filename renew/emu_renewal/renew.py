@@ -157,8 +157,11 @@ class RenewalModel():
 
 
 class TruncRenewalModel(RenewalModel):
+    def __init__(self, pop, n_times, run_in, n_process_periods, gen_times_end=1000):
+        super().__init__(pop, n_times, run_in, n_process_periods)
+        self.gen_times_end = gen_times_end
 
-    def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int, gen_times_end=1000) -> tuple:
+    def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
         process_func = self.interp.get_interp_func(process_req)
         process_vals_exp = np.exp(process_func(self.model_times))
@@ -174,7 +177,7 @@ class TruncRenewalModel(RenewalModel):
 
         seed_func = self.seeder.get_interp_func([seed_peak, 0.0])
         for t in range(1, self.n_times):
-            gen_times_interest = min(t, gen_times_end)  # Truncate generation times if requested
+            gen_times_interest = min(t, self.gen_times_end)  # Truncate generation times if requested
             inc_vals = incidence[t - gen_times_interest :t]  # Incidence series
             gen_vals = densities[:gen_times_interest]  # Generation series
 
