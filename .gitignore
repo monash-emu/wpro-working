@@ -1,10 +1,9 @@
-notebooks/*
-*/.ipynb_checkpoints/*
+.DS_Store
 *.pyc
 *.pdf
 *.aux
 *.log
 *.tex
 *.svg
-/*_files/
-.DS_Store
+*/*_files/
+*/.ipynb_checkpoints/*
