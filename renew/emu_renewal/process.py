@@ -4,13 +4,18 @@ from scipy.interpolate import CubicSpline
 
 
 class InterpFunc():
-    """Abstract class for interpolation functions.
+    """Abstract base class for interpolation functions.
     Primarily for use in creating non-mechanistic processes here.
     """
     def __init__(self, x_vals):
         self.x_vals = x_vals
 
-    def get_interp_func(self):
+    def get_interp_func(self, y_vals):
+        """Construct the interpolation function.
+
+        Args:
+            y_vals: Requested y-values corresponding to x-values specified in x_vals
+        """
         pass
 
     def get_description(self):
@@ -18,15 +23,14 @@ class InterpFunc():
 
 
 class LinearInterpFunc(InterpFunc):
-    """Simple linear interpolation.
+    """Simple linear function.
     """
     def get_interp_func(self, y_vals):
         return lambda x: np.interp(x, self.x_vals, y_vals)
 
 
 class SplineInterpFunc(InterpFunc):
-    """Another standard interpolation option,
-    which has advantages of being continuous with continuous gradient.
+    """Another standard option with advantages of being continuous with continuous gradient.
     """
     def get_interp_func(self, y_vals):
         return CubicSpline(self.x_vals, y_vals)
@@ -36,6 +40,19 @@ def get_cos_points_link(
     coords_a: Tuple[float],
     coords_b: Tuple[float],
 ) -> callable:
+    """Use transposed, translated cosine function to 
+    join two coordinate pairs on Cartesian plane.
+
+    Args:
+        coords_a: Coordinates of first point
+        coords_b: Coordinates of second point
+
+    Raises:
+        ValueError: If the points are on the same vertical line
+
+    Returns:
+        Function to join the two points
+    """
     if coords_a[0] == coords_b[0]:
         raise ValueError('Same x-value for both submitted coordinates')
     period_adj = np.pi / (coords_b[0] - coords_a[0])
@@ -48,6 +65,8 @@ def get_cos_points_link(
 
 
 class CosInterpFunc(InterpFunc):
+    """See get_description method below
+    """
     def get_interp_func(self, y_vals):
         coords = list(zip(self.x_vals, y_vals))
 
