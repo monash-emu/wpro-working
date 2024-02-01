@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 from collections import namedtuple
 
-from .process import CosInterpFunc
+from .process import LinearInterpFunc, CosInterpFunc
 from .distributions import GammaDens
 
 
@@ -115,7 +115,7 @@ class RenewalModel():
         suscept[0] = self.pop - seed_peak
         r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
 
-        seed_func = CosInterpFunc([seed_peak, 0.0]).get_interp_func([0.0, self.run_in])
+        seed_func = CosInterpFunc([0.0, self.run_in]).get_interp_func([seed_peak, 0.0])
         for t in range(1, self.n_times):
             r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
             contribution_by_day = incidence[:t] * densities[:t][::-1]
