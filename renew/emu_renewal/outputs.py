@@ -7,8 +7,7 @@ from .renew import Outputs
 
 def plot_output_fit(
     targets: pd.Series,
-    result: Outputs,
-    process_vals: np.array,
+    result,
     n_times: int,
     cdr: float = 1.0,
 ) -> go.Figure:
@@ -23,7 +22,7 @@ def plot_output_fit(
     Returns:
         Interactive figure
     """
-    fitted, suscept, r_t, _ = result
+    fitted, suscept, r_t, process_vals = result
     model_times = pd.Series(range(n_times))
     fig = make_subplots(3, 1, shared_xaxes=True, vertical_spacing=0.05, subplot_titles=['incidence', 'reproduction number', 'susceptibles'])
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode='markers', name='targets'), row=1, col=1)
