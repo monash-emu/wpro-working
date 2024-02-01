@@ -100,6 +100,7 @@ class RenewalModel():
         self.interp = CosInterpFunc(req_x_vals)
         self.dens_obj = GammaDens()
         self.model_times = np.array([float(t) for t in range(self.n_times)])
+        self.seeder = CosInterpFunc([0.0, self.run_in])
         
     def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
@@ -115,7 +116,7 @@ class RenewalModel():
         suscept[0] = self.pop - seed_peak
         r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
 
-        seed_func = CosInterpFunc([0.0, self.run_in]).get_interp_func([seed_peak, 0.0])
+        seed_func = self.seeder.get_interp_func([seed_peak, 0.0])
         for t in range(1, self.n_times):
             r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
             contribution_by_day = incidence[:t] * densities[:t][::-1]
