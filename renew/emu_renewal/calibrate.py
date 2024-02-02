@@ -3,12 +3,7 @@ import pymc as pm
 import pytensor.tensor as pt
 
 def get_wrapped_ll(priors, llfunc):
-    prior_types = []
-    for prior in priors:
-        if prior.size > 1:
-            prior_types.append(pt.dvector)
-        else:
-            prior_types.append(pt.dscalar)
+    prior_types = [pt.dvector if p.size > 1 else pt.dscalar for p in priors]
 
     # define a pytensor Op for our likelihood function
     class CustomLogLike(pt.Op):
