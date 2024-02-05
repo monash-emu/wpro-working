@@ -92,12 +92,12 @@ class TruncRenewalModel(RenewalModel):
         suscept = np.zeros(self.n_times)
         r_t = np.zeros(self.n_times)
 
-        seed_peak = np.exp(seed)
-        incidence[0] = seed_peak
-        suscept[0] = self.pop - seed_peak
+        seed_func = self.seeding_func(seed)
+        seed_0 = seed_func(0.0)
+        incidence[0] = seed_0
+        suscept[0] = self.pop - seed_0
         r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
 
-        seed_func = self.seeder.get_interp_func([seed_peak, 0.0])
         for t in range(1, self.n_times):
             gen_times_interest = min(t, self.gen_times_end)  # Truncate generation times if requested
             inc_vals = incidence[t - gen_times_interest :t]  # Incidence series
@@ -105,7 +105,7 @@ class TruncRenewalModel(RenewalModel):
 
             r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
             contribution_by_day = inc_vals * gen_vals[::-1]
-            seeding_component = seed_func(t)
+            seeding_component = seed_func(float(t))
             renewal_component = contribution_by_day.sum() * r_t[t]
             incidence[t] = seeding_component + renewal_component
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
