@@ -6,7 +6,7 @@ from .process import LinearInterpFunc, CosInterpFunc
 from .distributions import GammaDens
 
 
-ModelResult = namedtuple("ModelResult", ["incidence", "suscept", "r_t", "process"])
+ModelResult = namedtuple('ModelResult', ['incidence', 'suscept', 'r_t', 'process'])
 
 
 class RenewalModel:
@@ -51,32 +51,32 @@ class RenewalModel:
 
     def get_description(self):
         renew_desc = (
-            "\n\n### Renewal process\n"
-            "Calculation of the renewal process "
-            "consists of multiplying the incidence values for the preceding days "
-            "by the reversed generation time distribution values. "
-            "This follows a standard formula, "
-            "described elsewhere by several groups,[@cori2013; @faria2021] i.e. "
-            "$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n"
-            "$R_t$ is calculated as the product of the proportion "
-            "of the population remaining susceptible "
-            "and the non-mechanistic random process "
-            "generated external to the renewal model. "
-            "The susceptible population is calculated by "
-            "subtracting the number of new incident cases from the "
-            "running total of susceptibles at each iteration.\n"
+            '\n\n### Renewal process\n'
+            'Calculation of the renewal process '
+            'consists of multiplying the incidence values for the preceding days '
+            'by the reversed generation time distribution values. '
+            'This follows a standard formula, '
+            'described elsewhere by several groups,[@cori2013; @faria2021] i.e. '
+            '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n'
+            '$R_t$ is calculated as the product of the proportion '
+            'of the population remaining susceptible '
+            'and the non-mechanistic random process '
+            'generated external to the renewal model. '
+            'The susceptible population is calculated by '
+            'subtracting the number of new incident cases from the '
+            'running total of susceptibles at each iteration.\n'
         )
 
         non_mech_desc = (
-            "\n\n### Non-mechanistic process\n"
-            "The time values corresponding to the submitted process values "
-            "are set to be evenly spaced throughout the simulation period. "
-            "Next, a continuous function of time was constructed from "
-            "the non-mechanistic process series values submitted to the model. "
-            "After curve fitting, the sequence of parameter values pertaining to "
-            "the non-mechanistic process are exponentiated, "
-            "such that parameter exploration for these quantities is "
-            "undertaken in the log-transformed space. "
+            '\n\n### Non-mechanistic process\n'
+            'The time values corresponding to the submitted process values '
+            'are set to be evenly spaced throughout the simulation period. '
+            'Next, a continuous function of time was constructed from '
+            'the non-mechanistic process series values submitted to the model. '
+            'After curve fitting, the sequence of parameter values pertaining to '
+            'the non-mechanistic process are exponentiated, '
+            'such that parameter exploration for these quantities is '
+            'undertaken in the log-transformed space. '
         )
 
         return (

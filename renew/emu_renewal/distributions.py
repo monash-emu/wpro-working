@@ -21,7 +21,7 @@ class Dens():
         pass
 
 
-class GammaDens():
+class GammaDens(Dens):
     """Density class for generating gamma-distributed denities.
     """
     def get_params(
