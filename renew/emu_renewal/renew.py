@@ -20,7 +20,10 @@ class RenewalModel():
         self.dens_obj = GammaDens()
         self.model_times = np.array([float(t) for t in range(self.n_times)])
         self.seeder = CosInterpFunc([0.0, self.run_in])
-        
+
+    def seeding_func(self, seed_param):
+        return self.seeder.get_interp_func([np.exp(seed_param), 0.0])
+       
     def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
         process_func = self.interp.get_interp_func(process_req)
@@ -30,16 +33,16 @@ class RenewalModel():
         suscept = np.zeros(self.n_times)
         r_t = np.zeros(self.n_times)
 
-        seed_peak = np.exp(seed)
-        incidence[0] = seed_peak
-        suscept[0] = self.pop - seed_peak
+        seed_func = self.seeding_func(seed)
+        seed_0 = seed_func(0.0)
+        incidence[0] = seed_0
+        suscept[0] = self.pop - seed_0
         r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
 
-        seed_func = self.seeder.get_interp_func([seed_peak, 0.0])
         for t in range(1, self.n_times):
             r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
             contribution_by_day = incidence[:t] * densities[:t][::-1]
-            seeding_component = seed_func(t)
+            seeding_component = seed_func(float(t))
             renewal_component = contribution_by_day.sum() * r_t[t]
             incidence[t] = seeding_component + renewal_component
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
