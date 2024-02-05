@@ -19,10 +19,10 @@ class RenewalModel():
         self.interp = CosInterpFunc(req_x_vals)
         self.dens_obj = GammaDens()
         self.model_times = np.array([float(t) for t in range(self.n_times)])
-        self.seeder = CosInterpFunc([0.0, self.run_in])
+        self.seeder = CosInterpFunc([0.0, round(self.run_in / 2.0), self.run_in])
 
     def seeding_func(self, seed_param):
-        return self.seeder.get_interp_func([np.exp(seed_param), 0.0])
+        return self.seeder.get_interp_func([0.0, np.exp(seed_param), 0.0])
        
     def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
