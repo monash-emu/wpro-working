@@ -6,10 +6,10 @@ from .process import LinearInterpFunc, CosInterpFunc
 from .distributions import GammaDens
 
 
-ModelResult = namedtuple('ModelResult', ['incidence', 'suscept', 'r_t', 'process'])
+ModelResult = namedtuple("ModelResult", ["incidence", "suscept", "r_t", "process"])
 
 
-class RenewalModel():
+class RenewalModel:
     def __init__(self, pop, n_times, run_in, n_process_periods):
         self.pop = pop
         self.n_times = n_times
@@ -28,7 +28,7 @@ class RenewalModel():
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
         process_func = self.interp.get_interp_func(process_req)
         process_vals_exp = np.exp(process_func(self.model_times))
-        
+
         incidence = np.zeros(self.n_times)
         suscept = np.zeros(self.n_times)
         r_t = np.zeros(self.n_times)
@@ -48,34 +48,43 @@ class RenewalModel():
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
         return ModelResult(incidence, suscept, r_t, process_vals_exp)
-    
+
     def get_description(self):
-        renew_desc = '\n\n### Renewal process\n' \
-            'Calculation of the renewal process ' \
-            'consists of multiplying the incidence values for the preceding days ' \
-            'by the reversed generation time distribution values. ' \
-            'This follows a standard formula, ' \
-            'described elsewhere by several groups,[@cori2013; @faria2021] i.e. ' \
-            '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n' \
-            '$R_t$ is calculated as the product of the proportion ' \
-            'of the population remaining susceptible ' \
-            'and the non-mechanistic random process ' \
-            'generated external to the renewal model. ' \
-            'The susceptible population is calculated by ' \
-            'subtracting the number of new incident cases from the ' \
-            'running total of susceptibles at each iteration.\n'
-        
-        non_mech_desc = '\n\n### Non-mechanistic process\n' \
-            'The time values corresponding to the submitted process values ' \
-            'are set to be evenly spaced throughout the simulation period. ' \
-            'Next, a continuous function of time was constructed from ' \
-            'the non-mechanistic process series values submitted to the model. ' \
-            'After curve fitting, the sequence of parameter values pertaining to ' \
-            "the non-mechanistic process are exponentiated, " \
-            'such that parameter exploration for these quantities is ' \
-            'undertaken in the log-transformed space. '
-        
-        return self.dens_obj.get_description() + renew_desc + non_mech_desc + self.interp.get_description()
+        renew_desc = (
+            "\n\n### Renewal process\n"
+            "Calculation of the renewal process "
+            "consists of multiplying the incidence values for the preceding days "
+            "by the reversed generation time distribution values. "
+            "This follows a standard formula, "
+            "described elsewhere by several groups,[@cori2013; @faria2021] i.e. "
+            "$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n"
+            "$R_t$ is calculated as the product of the proportion "
+            "of the population remaining susceptible "
+            "and the non-mechanistic random process "
+            "generated external to the renewal model. "
+            "The susceptible population is calculated by "
+            "subtracting the number of new incident cases from the "
+            "running total of susceptibles at each iteration.\n"
+        )
+
+        non_mech_desc = (
+            "\n\n### Non-mechanistic process\n"
+            "The time values corresponding to the submitted process values "
+            "are set to be evenly spaced throughout the simulation period. "
+            "Next, a continuous function of time was constructed from "
+            "the non-mechanistic process series values submitted to the model. "
+            "After curve fitting, the sequence of parameter values pertaining to "
+            "the non-mechanistic process are exponentiated, "
+            "such that parameter exploration for these quantities is "
+            "undertaken in the log-transformed space. "
+        )
+
+        return (
+            self.dens_obj.get_description()
+            + renew_desc
+            + non_mech_desc
+            + self.interp.get_description()
+        )
 
 
 class TruncRenewalModel(RenewalModel):
@@ -83,11 +92,13 @@ class TruncRenewalModel(RenewalModel):
         super().__init__(pop, n_times, run_in, n_process_periods)
         self.gen_times_end = gen_times_end
 
-    def func(self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int) -> tuple:
+    def func(
+        self, gen_time_mean: float, gen_time_sd: float, process_req: List[float], seed: int
+    ) -> tuple:
         densities = self.dens_obj.get_densities(self.n_times, gen_time_mean, gen_time_sd)
         process_func = self.interp.get_interp_func(process_req)
         process_vals_exp = np.exp(process_func(self.model_times))
-        
+
         incidence = np.zeros(self.n_times)
         suscept = np.zeros(self.n_times)
         r_t = np.zeros(self.n_times)
@@ -99,8 +110,10 @@ class TruncRenewalModel(RenewalModel):
         r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
 
         for t in range(1, self.n_times):
-            gen_times_interest = min(t, self.gen_times_end)  # Truncate generation times if requested
-            inc_vals = incidence[t - gen_times_interest :t]  # Incidence series
+            gen_times_interest = min(
+                t, self.gen_times_end
+            )  # Truncate generation times if requested
+            inc_vals = incidence[t - gen_times_interest : t]  # Incidence series
             gen_vals = densities[:gen_times_interest]  # Generation series
 
             r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
@@ -110,4 +123,4 @@ class TruncRenewalModel(RenewalModel):
             incidence[t] = seeding_component + renewal_component
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
-        return ModelResult(incidence, suscept, r_t, process_vals_exp) 
+        return ModelResult(incidence, suscept, r_t, process_vals_exp)
