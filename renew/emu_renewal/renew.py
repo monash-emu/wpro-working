@@ -151,11 +151,13 @@ class JaxModel(RenewalModel):
         self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(0.0, self.n_times, self.n_process_periods))
         self.dens_obj = dens_obj
         self.model_times = jnp.arange(self.n_times)
-        self.seed_x_vals = [0.0, round(self.run_in * 0.5), self.run_in]
+        self.seed_x_vals = [0.0, self.run_in * 0.5, self.run_in]
+        self.start_seed = 0.0
+        self.end_seed = 0.0
 
     def seed_func(self, t, seed):
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
-        y_vals = sinterp.get_scale_data(jnp.array([0.0, jnp.exp(seed), 0.0]))
+        y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(seed), self.end_seed]))
         return cosine_multicurve(t, x_vals, y_vals)
     
     def func(self, gen_time_mean, gen_time_sd, process_req, seed):
@@ -186,7 +188,9 @@ class JaxModel(RenewalModel):
         seed_desc = (
             '\n\n### Seeding\n'
             'Seeding was achieved by interpolating using a cosine function. '
-            f'The number of seeded cases scaled from ? at time {self.seed_x_vals[0]} '
+            f'The number of seeded cases scaled from {self.start_seed} at time {self.seed_x_vals[0]} '
+            'to the peak value at half way through the burn-in period '
+            f'back to {self.end_seed} at the end of the burn-in period ({self.seed_x_vals[-1]}). '
         )
         
         return (
