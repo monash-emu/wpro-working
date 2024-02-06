@@ -1,6 +1,5 @@
 from typing import List
 import numpy as np
-from collections import namedtuple
 from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
@@ -62,7 +61,7 @@ class RenewalModel:
 
         return ModelResult(incidence, suscept, r_t, process_vals_exp)
 
-    def get_description(self):
+    def get_model_desc(self):
         renew_desc = (
             '\n\n### Renewal process\n'
             'Calculation of the renewal process '
@@ -92,11 +91,14 @@ class RenewalModel:
             'undertaken in the log-transformed space. '
         )
 
+        return renew_desc + non_mech_desc
+
+    def get_full_desc(self):
+
         return (
-            self.dens_obj.get_description()
-            + renew_desc
-            + non_mech_desc
-            + self.interp.get_description()
+            self.dens_obj.get_description() +
+            self.get_model_desc() +
+            self.interp.get_description()
         )
 
 
@@ -139,7 +141,7 @@ class TruncRenewalModel(RenewalModel):
         return ModelResult(incidence, suscept, r_t, process_vals_exp)
 
 
-class JaxModel:
+class JaxModel(RenewalModel):
     def __init__(self, population, window_len, n_times, run_in, n_process_periods, dens_obj):
         self.pop = population
         self.n_times = n_times
@@ -156,7 +158,7 @@ class JaxModel:
         y_vals = sinterp.get_scale_data(jnp.array([0.0, jnp.exp(seed), 0.0]))
         return cosine_multicurve(t, x_vals, y_vals)
     
-    def model_func(self, gen_time_mean, gen_time_sd, process_req, seed):
+    def func(self, gen_time_mean, gen_time_sd, process_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_time_mean, gen_time_sd)
 
         y_proc_vals = sinterp.get_scale_data(process_req)
@@ -179,41 +181,17 @@ class JaxModel:
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
         return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], process_vals)
     
-    def get_description(self):
-        renew_desc = (
-            '\n\n### Renewal process\n'
-            'Calculation of the renewal process '
-            'consists of multiplying the incidence values for the preceding days '
-            'by the reversed generation time distribution values. '
-            'This follows a standard formula, '
-            'described elsewhere by several groups,[@cori2013; @faria2021] i.e. '
-            '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n'
-            '$R_t$ is calculated as the product of the proportion '
-            'of the population remaining susceptible '
-            'and the non-mechanistic random process '
-            'generated external to the renewal model. '
-            'The susceptible population is calculated by '
-            'subtracting the number of new incident cases from the '
-            'running total of susceptibles at each iteration.\n'
-        )
-
-        non_mech_desc = (
-            '\n\n### Non-mechanistic process\n'
-            'The time values corresponding to the submitted process values '
-            'are set to be evenly spaced throughout the simulation period. '
-            'Next, a continuous function of time was constructed from '
-            'the non-mechanistic process series values submitted to the model. '
-            'After curve fitting, the sequence of parameter values pertaining to '
-            'the non-mechanistic process are exponentiated, '
-            'such that parameter exploration for these quantities is '
-            'undertaken in the log-transformed space. '
-        )
-        
+    def get_full_desc(self):
+       
         seed_desc = (
             '\n\n### Seeding\n'
             'Seeding was achieved by interpolating using a cosine function. '
             f'The number of seeded cases scaled from ? at time {self.seed_x_vals[0]} '
         )
         
-        return renew_desc + non_mech_desc + self.dens_obj.get_description() + seed_desc
+        return (
+            self.dens_obj.get_description() +
+            self.get_model_desc() +
+            seed_desc
+        )
     
