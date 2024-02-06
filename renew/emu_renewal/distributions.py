@@ -1,6 +1,7 @@
 from typing import Dict
 import numpy as np
 from scipy.stats import gamma
+from jax.scipy.stats import gamma as jaxgamma
 from jax import numpy as jnp
 
 
@@ -80,5 +81,5 @@ class GammaDens(Dens):
 
 class JaxGammaDens(GammaDens):
     def get_densities(self, window_len, mean, sd):
-        return jnp.diff(gamma.cdf(jnp.arange(window_len + 1), **self.get_params(mean, sd)))
+        return jnp.diff(jaxgamma.cdf(jnp.arange(window_len + 1), **self.get_params(mean, sd)))
     
