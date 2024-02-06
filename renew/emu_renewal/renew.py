@@ -1,12 +1,25 @@
 from typing import List
 import numpy as np
 from collections import namedtuple
+from typing import NamedTuple
+from jax import lax, vmap
+from jax import numpy as jnp
 
+from emu_renewal.process import cosine_multicurve, sinterp
 from .process import LinearInterpFunc, CosInterpFunc
 from .distributions import GammaDens
 
 
-ModelResult = namedtuple('ModelResult', ['incidence', 'suscept', 'r_t', 'process'])
+class RenewalState(NamedTuple):
+    incidence: jnp.array
+    suscept: float
+
+
+class ModelResult(NamedTuple):
+    incidence: jnp.array
+    suscept: jnp.array
+    r_t: jnp.array
+    process: jnp.array
 
 
 class RenewalModel:
@@ -124,3 +137,83 @@ class TruncRenewalModel(RenewalModel):
             suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
 
         return ModelResult(incidence, suscept, r_t, process_vals_exp)
+
+
+class JaxModel:
+    def __init__(self, population, window_len, n_times, run_in, n_process_periods, dens_obj):
+        self.pop = population
+        self.n_times = n_times
+        self.run_in = run_in
+        self.n_process_periods = n_process_periods
+        self.window_len = window_len
+        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(0.0, self.n_times, self.n_process_periods))
+        self.dens_obj = dens_obj
+        self.model_times = jnp.arange(self.n_times)
+        self.seed_x_vals = [0.0, round(self.run_in * 0.5), self.run_in]
+
+    def seed_func(self, t, seed):
+        x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
+        y_vals = sinterp.get_scale_data(jnp.array([0.0, jnp.exp(seed), 0.0]))
+        return cosine_multicurve(t, x_vals, y_vals)
+    
+    def model_func(self, gen_time_mean, gen_time_sd, process_req, seed):
+        densities = self.dens_obj.get_densities(self.window_len, gen_time_mean, gen_time_sd)
+
+        y_proc_vals = sinterp.get_scale_data(process_req)
+        process_vals = jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_times, self.x_proc_vals, y_proc_vals))
+
+        init_state = RenewalState(np.zeros(self.window_len), self.pop)
+        
+        def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
+            r_t = process_vals[t] * state.suscept / self.pop
+            renewal = (densities * state.incidence).sum() * r_t
+            seed_component = self.seed_func(t, seed)
+            total_new_incidence = renewal + seed_component
+            total_new_incidence = jnp.where(total_new_incidence > state.suscept, state.suscept, total_new_incidence)
+            suscept = state.suscept - total_new_incidence
+            incidence = jnp.zeros_like(state.incidence)
+            incidence = incidence.at[1:].set(state.incidence[:-1])
+            incidence = incidence.at[0].set(total_new_incidence)
+            return RenewalState(incidence, suscept), jnp.array([total_new_incidence, suscept, r_t])
+
+        end_state, outputs = lax.scan(state_update, init_state, self.model_times)
+        return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], process_vals)
+    
+    def get_description(self):
+        renew_desc = (
+            '\n\n### Renewal process\n'
+            'Calculation of the renewal process '
+            'consists of multiplying the incidence values for the preceding days '
+            'by the reversed generation time distribution values. '
+            'This follows a standard formula, '
+            'described elsewhere by several groups,[@cori2013; @faria2021] i.e. '
+            '$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n'
+            '$R_t$ is calculated as the product of the proportion '
+            'of the population remaining susceptible '
+            'and the non-mechanistic random process '
+            'generated external to the renewal model. '
+            'The susceptible population is calculated by '
+            'subtracting the number of new incident cases from the '
+            'running total of susceptibles at each iteration.\n'
+        )
+
+        non_mech_desc = (
+            '\n\n### Non-mechanistic process\n'
+            'The time values corresponding to the submitted process values '
+            'are set to be evenly spaced throughout the simulation period. '
+            'Next, a continuous function of time was constructed from '
+            'the non-mechanistic process series values submitted to the model. '
+            'After curve fitting, the sequence of parameter values pertaining to '
+            'the non-mechanistic process are exponentiated, '
+            'such that parameter exploration for these quantities is '
+            'undertaken in the log-transformed space. '
+        )
+        
+        seed_desc = (
+            '\n\n### Seeding\n'
+            'Seeding was achieved by interpolating using a cosine function. '
+            f'The number of seeded cases scaled from ? at time {self.seed_x_vals[0]} '
+        )
+        
+        return renew_desc + non_mech_desc + self.dens_obj.get_description() + seed_desc
+    
