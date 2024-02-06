@@ -1,6 +1,7 @@
 from typing import Dict
 import numpy as np
 from scipy.stats import gamma
+from jax import numpy as jnp
 
 
 class Dens():
@@ -75,4 +76,9 @@ class GammaDens(Dens):
             'The integrals of the probability density of this distribution ' \
             'between consecutive integer values are then calculated for ' \
             'later combination with the incidence time series. '
+    
+
+class JaxGammaDens(GammaDens):
+    def get_densities(self, window_len, mean, sd):
+        return jnp.diff(gamma.cdf(jnp.arange(window_len + 1), **self.get_params(mean, sd)))
     
