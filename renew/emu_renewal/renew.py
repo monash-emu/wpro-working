@@ -166,7 +166,7 @@ class JaxModel(RenewalModel):
         y_proc_vals = sinterp.get_scale_data(process_req)
         process_vals = jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_times, self.x_proc_vals, y_proc_vals))
 
-        init_state = RenewalState(np.zeros(self.window_len), self.pop)
+        init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
         
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             r_t = process_vals[t] * state.suscept / self.pop
