@@ -142,7 +142,7 @@ class TruncRenewalModel(RenewalModel):
 
 
 class JaxModel(RenewalModel):
-    def __init__(self, population, window_len, n_times, run_in, n_process_periods, dens_obj):
+    def __init__(self, population, n_times, run_in, n_process_periods, dens_obj, window_len):
         self.pop = population
         self.n_times = n_times
         self.run_in = run_in
