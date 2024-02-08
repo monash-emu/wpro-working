@@ -25,9 +25,7 @@ packages = [
 python = ">=3.8.0, <4.0.0"
 estival = "==0.4.9"
 kaleido = "==0.2.1"
-pylatex = "==1.4.1"
 summerepi2 = ">=1.3.0"
-tables = "^3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
