@@ -27,8 +27,8 @@ class RenewalModel:
         self.n_times = n_times
         self.run_in = run_in
         self.n_process_periods = n_process_periods
-        req_x_vals = np.linspace(0.0, n_times, n_process_periods)
-        self.interp = CosInterpFunc(req_x_vals)
+        self.req_x_vals = np.linspace(0.0, n_times, n_process_periods)
+        self.interp = CosInterpFunc(self.req_x_vals)
         self.dens_obj = GammaDens()
         self.model_times = np.array([float(t) for t in range(self.n_times)])
         self.seeder = CosInterpFunc([0.0, round(self.run_in / 2.0), self.run_in])
@@ -108,12 +108,12 @@ class JaxModel(RenewalModel):
         self.run_in = run_in
         self.n_process_periods = n_process_periods
         self.window_len = window_len
-        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(start, end, self.n_process_periods))
+        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(start + 30, end + 30, self.n_process_periods))
         self.dens_obj = dens_obj
 
-        self.model_times = jnp.arange(int(end - start))
+        self.model_times = jnp.arange(30, int(end - start) + 30)
 
-        self.seed_x_vals = [0.0, self.run_in * 0.5, self.run_in]
+        self.seed_x_vals = [30.0, 30.0 + self.run_in * 0.5, 30.0 + self.run_in]
         self.start_seed = 0.0
         self.end_seed = 0.0
 
@@ -134,7 +134,7 @@ class JaxModel(RenewalModel):
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
         
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            r_t = process_vals[t] * state.suscept / self.pop
+            r_t = process_vals[t - 30] * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, seed)
             total_new_incidence = renewal + seed_component
