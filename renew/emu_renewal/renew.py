@@ -126,7 +126,6 @@ class JaxModel(RenewalModel):
         self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(self.start, self.end, self.n_process_periods))
         self.dens_obj = dens_obj
         self.model_times = jnp.arange(self.start, self.end)
-        # self.seed_x_vals = [self.start, self.start + self.seed_duration * 0.5, self.start + self.seed_duration]
         self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
