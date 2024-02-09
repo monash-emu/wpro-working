@@ -121,11 +121,14 @@ class JaxModel(RenewalModel):
         y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(seed), self.end_seed]))
         return cosine_multicurve(t, x_vals, y_vals)
     
+    def fit_process_curve(self, y_proc_vals):
+        return jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_times, self.x_proc_vals, y_proc_vals))
+
     def func(self, gen_time_mean, gen_time_sd, process_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_time_mean, gen_time_sd)
 
         y_proc_vals = sinterp.get_scale_data(process_req)
-        process_vals = jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_times, self.x_proc_vals, y_proc_vals))
+        process_vals = self.fit_process_curve(y_proc_vals)
 
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
         
