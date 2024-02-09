@@ -103,15 +103,17 @@ class RenewalModel:
 
 
 class JaxModel(RenewalModel):
-    def __init__(self, population, n_times, run_in, n_process_periods, dens_obj, window_len):
+    def __init__(self, population, start, end, run_in, n_process_periods, dens_obj, window_len):
         self.pop = population
-        self.n_times = n_times
         self.run_in = run_in
         self.n_process_periods = n_process_periods
         self.window_len = window_len
-        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(0.0, self.n_times, self.n_process_periods))
+        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(start, end, self.n_process_periods))
         self.dens_obj = dens_obj
-        self.model_times = jnp.arange(self.n_times)
+
+        self.model_times = np.arange(int(end - start) + 1)
+
+        self.model_int_times = jnp.array(self.model_times)
         self.seed_x_vals = [0.0, self.run_in * 0.5, self.run_in]
         self.start_seed = 0.0
         self.end_seed = 0.0
@@ -122,7 +124,7 @@ class JaxModel(RenewalModel):
         return cosine_multicurve(t, x_vals, y_vals)
     
     def fit_process_curve(self, y_proc_vals):
-        return jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_times, self.x_proc_vals, y_proc_vals))
+        return jnp.exp(vmap(cosine_multicurve, in_axes=(0, None, None))(self.model_int_times, self.x_proc_vals, y_proc_vals))
 
     def func(self, gen_time_mean, gen_time_sd, process_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_time_mean, gen_time_sd)
@@ -144,7 +146,7 @@ class JaxModel(RenewalModel):
             incidence = incidence.at[0].set(total_new_incidence)
             return RenewalState(incidence, suscept), jnp.array([total_new_incidence, suscept, r_t])
 
-        end_state, outputs = lax.scan(state_update, init_state, self.model_times)
+        end_state, outputs = lax.scan(state_update, init_state, self.model_int_times)
         return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], process_vals)
     
     def get_full_desc(self):
