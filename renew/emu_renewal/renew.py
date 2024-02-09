@@ -3,6 +3,7 @@ import numpy as np
 from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
+from datetime import datetime, timedelta
 
 from emu_renewal.process import cosine_multicurve, sinterp
 from .process import LinearInterpFunc, CosInterpFunc
@@ -103,16 +104,30 @@ class RenewalModel:
 
 
 class JaxModel(RenewalModel):
-    def __init__(self, population, start, end, seed_duration, n_process_periods, dens_obj, window_len):
+    def __init__(self, population, start, end, seed_duration, n_process_periods, dens_obj, window_len, epoch):
+        self.epoch = epoch
+        msg = "Time data type not supported"
+        if isinstance(start, int):
+            self.start = start
+        elif isinstance(start, datetime):
+            self.start = int(epoch.dti_to_index(start))
+        else:
+            raise ValueError(msg)
+        if isinstance(end, int):
+            self.end = end + 1
+        elif isinstance(end, datetime):
+            self.end = int(epoch.dti_to_index(end)) + 1
+        else:
+            raise ValueError(msg)
         self.pop = population
         self.seed_duration = seed_duration
         self.n_process_periods = n_process_periods
         self.window_len = window_len
-        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(start, end, self.n_process_periods))
+        self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(self.start, self.end, self.n_process_periods))
         self.dens_obj = dens_obj
-        self.start = start
-        self.model_times = jnp.arange(start, end)
-        self.seed_x_vals = [start, start + self.seed_duration * 0.5, start + self.seed_duration]
+        self.model_times = jnp.arange(self.start, self.end)
+        # self.seed_x_vals = [self.start, self.start + self.seed_duration * 0.5, self.start + self.seed_duration]
+        self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
 
