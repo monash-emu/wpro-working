@@ -114,9 +114,9 @@ class JaxModel(RenewalModel):
         else:
             raise ValueError(msg)
         if isinstance(end, int):
-            self.end = end + 1
+            self.end = end
         elif isinstance(end, datetime):
-            self.end = int(epoch.dti_to_index(end)) + 1
+            self.end = int(epoch.dti_to_index(end))
         else:
             raise ValueError(msg)
         self.pop = population
@@ -125,7 +125,7 @@ class JaxModel(RenewalModel):
         self.window_len = window_len
         self.x_proc_vals = sinterp.get_scale_data(jnp.linspace(self.start, self.end, self.n_process_periods))
         self.dens_obj = dens_obj
-        self.model_times = jnp.arange(self.start, self.end)
+        self.model_times = jnp.arange(self.start, self.end + 1)
         self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
