@@ -14,7 +14,9 @@ pyarrow = "^15.0.0"
 
 jupyterlab = {version = "^4.1.0", optional = true}
 ipywidgets = {version = "^8.1.2", optional = true}
-pandas = "2.1.4"
+pandas = "^2.1.4"
+tabulate = "^0.9.0"
+kaleido = "0.2.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.2.1"
