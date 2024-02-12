@@ -1,11 +1,14 @@
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
+def get_standard_four_subplots(titles):
+    return make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=titles)
+
 
 def plot_spaghetti(cases, targets, proc, suscept, r, margins, titles):
-    fig = make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=titles)
-    fig.add_traces(cases.plot().data, rows=1, cols=1)
+    fig = get_standard_four_subplots(titles)
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
+    fig.add_traces(cases.plot().data, rows=1, cols=1)
     fig.add_traces(proc.plot().data, rows=2, cols=1)
     fig.add_traces(suscept.plot().data, rows=1, cols=2)
     fig.add_traces(r.plot().data, rows=2, cols=2)
@@ -25,7 +28,7 @@ def add_ci_patch_to_plot(fig, df, colour, row, col):
 
 
 def plot_uncertainty_patches(cases, targets, proc, suscept, r, margins, titles, colours):
-    fig = make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=titles)
+    fig = get_standard_four_subplots(titles)
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     add_ci_patch_to_plot(fig, cases, colours[0], 1, 1)
     add_ci_patch_to_plot(fig, suscept, colours[1], 1, 2)
