@@ -1,31 +1,33 @@
-import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def plot_output_fit(
-    targets: pd.Series,
-    result,
-    n_times: int,
-    cdr: float = 1.0,
-) -> go.Figure:
-    """Plot results from a fitting attempt against the target data and show estimated random process.
+def plot_spaghetti(cases, targets, proc, suscept, r, margins, titles):
+    fig = make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=titles)
+    fig.update_layout(margin=margins, height=600)
+    fig.add_traces(cases.plot().data, rows=1, cols=1)
+    fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
+    fig.add_traces(proc.plot().data, rows=2, cols=1)
+    fig.add_traces(suscept.plot().data, rows=1, cols=2)
+    fig.add_traces(r.plot().data, rows=2, cols=2)
+    return fig
 
-    Args:
-        targets: Data targeted
-        result: Epidemiological outputs by the renewal process
-        process_vals: Estimated non-mechanistic variation in infectiousness
-        n_times: Number of simulated time points
 
-    Returns:
-        Interactive figure
-    """
-    fitted, suscept, r_t, process_vals = result
-    model_times = pd.Series(range(n_times))
-    fig = make_subplots(3, 1, shared_xaxes=True, vertical_spacing=0.05, subplot_titles=['incidence', 'reproduction number', 'susceptibles'])
-    fig.add_trace(go.Scatter(x=targets.index, y=targets, mode='markers', name='targets'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=model_times, y=fitted * cdr, name='model'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=model_times, y=process_vals, name='transmission potential'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=model_times, y=r_t, name='Rt'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=model_times, y=suscept, name='susceptibles'), row=3, col=1)
-    return fig.update_layout(margin={'t': 20, 'b': 5, 'l': 5, 'r': 5})
+def plot_uncertainty_patches(cases, select_data, proc, suscept, r, margins, titles):
+    fig = make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=titles)
+    fig.update_layout(margin=margins, height=600, showlegend=False)
+    x_vals = proc.index
+    fig.add_trace(go.Scatter(x=select_data.index, y=select_data, mode="markers"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=cases[0.05], line={"width": 0.0}), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=cases[0.95], fill="tonexty", mode="none"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=cases[0.5], line={"width": 1.0}), row=1, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=suscept[0.05], line={"width": 0.0}), row=1, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=suscept[0.95], fill="tonexty", mode="none"), row=1, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=suscept[0.5], line={"width": 1.0}), row=1, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=r[0.05], line={"width": 0.0}), row=2, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=r[0.95], fill="tonexty", mode="none"), row=2, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=r[0.5], line={"width": 1.0}), row=2, col=1)
+    fig.add_trace(go.Scatter(x=x_vals, y=proc[0.05], line={"width": 0.0}), row=2, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=proc[0.95], fill="tonexty", mode="none"), row=2, col=2)
+    fig.add_trace(go.Scatter(x=x_vals, y=proc[0.5], line={"width": 1.0}), row=2, col=2)
+    return fig
