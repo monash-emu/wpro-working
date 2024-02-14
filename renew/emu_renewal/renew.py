@@ -120,9 +120,10 @@ class JaxModel(RenewalModel):
         self.seed_duration = seed_duration
         self.n_process_periods = n_process_periods
         self.window_len = window_len
-        self.x_proc_vals = sinterp.get_scale_data(
-            jnp.linspace(self.start, self.end, self.n_process_periods)
-        )
+
+        x_proc_vals = jnp.linspace(self.start + run_in, self.end, self.n_process_periods + 1)
+        self.x_proc_data = sinterp.get_scale_data(x_proc_vals)
+
         self.dens_obj = dens_obj
         self.model_times = jnp.arange(self.start, self.end + 1)
         self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
@@ -137,19 +138,20 @@ class JaxModel(RenewalModel):
 
     def fit_process_curve(self, y_proc_vals):
         cos_func = vmap(cosine_multicurve, in_axes=(0, None, None))
-        return jnp.exp(cos_func(self.model_times, self.x_proc_vals, y_proc_vals))
+        return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_vals))
 
-    def func(self, gen_mean, gen_sd, proc_req, seed):
+    def func(self, gen_mean, gen_sd, y_proc_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
 
-        y_proc_vals = sinterp.get_scale_data(proc_req)
-        process_vals = self.fit_process_curve(y_proc_vals)
+        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
+
+        y_proc_data = sinterp.get_scale_data(y_proc_vals)
+        process_vals = self.fit_process_curve(y_proc_data)
 
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
 
-            ##
             proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.start])
 
             r_t = proc_val * state.suscept / self.pop
