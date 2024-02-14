@@ -2,6 +2,7 @@ import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
 
+
 def get_wrapped_ll(priors, llfunc):
     prior_types = [pt.dvector if p.size > 1 else pt.dscalar for p in priors]
 
@@ -36,6 +37,6 @@ def use_model(priors, llfunc) -> list:
 
     # use a Potential to "call" the Op and include it in the logp computation
     ll = logl(*invars)
-    pm.Potential('loglikelihood', ll)
+    pm.Potential("loglikelihood", ll)
 
     return pymc_priors

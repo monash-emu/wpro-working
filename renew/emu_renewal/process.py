@@ -19,7 +19,7 @@ class InterpFunc:
         """
         pass
 
-    def get_description(self):
+    def get_desc(self):
         pass
 
 
@@ -37,10 +37,7 @@ class SplineInterpFunc(InterpFunc):
         return CubicSpline(self.x_vals, y_vals)
 
 
-def get_cos_points_link(
-    coords_a: Tuple[float],
-    coords_b: Tuple[float],
-) -> callable:
+def get_cos_points_link(coords_a: Tuple[float], coords_b: Tuple[float],) -> callable:
     """Use transposed, translated cosine function to
     join two coordinate pairs on Cartesian plane.
 
@@ -66,7 +63,7 @@ def get_cos_points_link(
 
 
 class CosInterpFunc(InterpFunc):
-    """See get_description method below"""
+    """See get_desc method below"""
 
     def get_interp_func(self, y_vals):
         coords = list(zip(self.x_vals, y_vals))
@@ -88,7 +85,7 @@ class CosInterpFunc(InterpFunc):
 
         return np.vectorize(piecewise_cosine_func)
 
-    def get_description(self):
+    def get_desc(self):
         return (
             "The interpolation function consisted of a piecewise function "
             "constructed from a cosine function on domain zero to $\pi$. "
