@@ -2,6 +2,10 @@ from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 
+def get_quantiles_from_spaghetti(spaghetti, quantiles):
+    return spaghetti.quantile(quantiles, axis=1).T
+
+
 def get_standard_four_subplots(titles):
     return make_subplots(
         rows=2,
