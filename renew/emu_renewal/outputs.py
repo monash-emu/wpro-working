@@ -40,6 +40,6 @@ def plot_uncertainty_patches(cases, targets, proc, suscept, r, margins, titles, 
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     add_ci_patch_to_plot(fig, cases, colours[0], 1, 1)
     add_ci_patch_to_plot(fig, suscept, colours[1], 1, 2)
-    add_ci_patch_to_plot(fig, r, colours[2], 2, 1)
-    add_ci_patch_to_plot(fig, proc, colours[3], 2, 2)
+    add_ci_patch_to_plot(fig, proc, colours[2], 2, 1)
+    add_ci_patch_to_plot(fig, r, colours[3], 2, 2)
     return fig.update_layout(margin=margins, height=600, showlegend=False)
