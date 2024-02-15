@@ -158,10 +158,11 @@ class JaxModel(RenewalModel):
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
             incidence = incidence.at[0].set(total_new_inc)
-            return RenewalState(incidence, suscept), jnp.array([total_new_inc, suscept, r_t, proc_val])
+            out = {"incidence": total_new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val}
+            return RenewalState(incidence, suscept), out
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
-        return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], outputs[:, 3])
+        return ModelResult(**outputs)
 
     def get_full_desc(self):
 
