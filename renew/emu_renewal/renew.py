@@ -142,33 +142,26 @@ class JaxModel(RenewalModel):
 
     def func(self, gen_mean, gen_sd, y_proc_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
-
         y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
-
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
         process_vals = self.fit_process_curve(y_proc_data)
-
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-
             proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.start])
-
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, seed)
-            total_new_incidence = renewal + seed_component
-            total_new_incidence = jnp.where(
-                total_new_incidence > state.suscept, state.suscept, total_new_incidence
-            )
-            suscept = state.suscept - total_new_incidence
+            total_new_inc = renewal + seed_component
+            total_new_inc = jnp.where(total_new_inc > state.suscept, state.suscept, total_new_inc)
+            suscept = state.suscept - total_new_inc
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
-            incidence = incidence.at[0].set(total_new_incidence)
-            return RenewalState(incidence, suscept), jnp.array([total_new_incidence, suscept, r_t])
+            incidence = incidence.at[0].set(total_new_inc)
+            return RenewalState(incidence, suscept), jnp.array([total_new_inc, suscept, r_t, proc_val])
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
-        return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], process_vals)
+        return ModelResult(outputs[:, 0], outputs[:, 1], outputs[:, 2], outputs[:, 3])
 
     def get_full_desc(self):
 
