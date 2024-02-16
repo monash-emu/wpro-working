@@ -36,7 +36,7 @@ def plot_spaghetti(spaghetti, targets):
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     for i in range(4):
         fig.add_traces(spaghetti[PANEL_SUBTITLES[i]].plot().data, rows=i // 2 + 1, cols=i % 2 + 1)
-    return fig.update_layout(margin=MARGINS, height=600)
+    return fig.update_layout(margin=MARGINS, height=600).update_yaxes(rangemode="tozero")
 
 
 def get_area_from_df(df, columns, colour):
@@ -56,4 +56,4 @@ def plot_uncertainty_patches(quantiles, targets, colours):
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     for i in range(4):
         add_ci_patch_to_plot(fig, quantiles[PANEL_SUBTITLES[i]], colours[i], i // 2 + 1, i % 2 + 1)
-    return fig.update_layout(margin=MARGINS, height=600, showlegend=False)
+    return fig.update_layout(margin=MARGINS, height=600, showlegend=False).update_yaxes(rangemode="tozero")
