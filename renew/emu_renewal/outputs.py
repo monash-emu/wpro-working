@@ -18,28 +18,24 @@ def get_spaghetti_from_params(model, params, model_func):
     return spaghetti.sort_index(axis=1, level=0)
 
 
-def get_quantiles_from_spaghetti(spaghetti, quantiles):
-    return spaghetti.quantile(quantiles, axis=1).T
+def get_quant_df_from_spaghetti(model, spaghetti, quantiles):
+    index_names = model.epoch.index_to_dti(model.model_times)
+    column_names = pd.MultiIndex.from_product([PANEL_SUBTITLES, quantiles])
+    quantiles_df = pd.DataFrame(index=index_names, columns=column_names)
+    for col in PANEL_SUBTITLES:
+        quantiles_df[col] = spaghetti[col].quantile(quantiles, axis=1).T
+    return quantiles_df
 
 
 def get_standard_four_subplots():
-    return make_subplots(
-        rows=2,
-        cols=2,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        horizontal_spacing=0.05,
-        subplot_titles=PANEL_SUBTITLES,
-    )
+    return make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=PANEL_SUBTITLES)
 
 
-def plot_spaghetti(cases, targets, suscept, r, proc):
+def plot_spaghetti(spaghetti, targets):
     fig = get_standard_four_subplots()
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
-    fig.add_traces(cases.plot().data, rows=1, cols=1)
-    fig.add_traces(suscept.plot().data, rows=1, cols=2)
-    fig.add_traces(r.plot().data, rows=2, cols=1)
-    fig.add_traces(proc.plot().data, rows=2, cols=2)
+    for i in range(4):
+        fig.add_traces(spaghetti[PANEL_SUBTITLES[i]].plot().data, rows=i // 2 + 1, cols=i % 2 + 1)
     return fig.update_layout(margin=MARGINS, height=600)
 
 
@@ -55,13 +51,9 @@ def add_ci_patch_to_plot(fig, df, colour, row, col):
     fig.add_trace(go.Scatter(x=x_vals, y=df[0.5], line={"color": colour}), row=row, col=col)
 
 
-def plot_uncertainty_patches(cases, targets, suscept, r, proc, colours):
+def plot_uncertainty_patches(quantiles, targets, colours):
     fig = get_standard_four_subplots()
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
-    add_ci_patch_to_plot(fig, cases, colours[0], 1, 1)
-    add_ci_patch_to_plot(fig, suscept, colours[1], 1, 2)
-    add_ci_patch_to_plot(fig, r, colours[2], 2, 1)
-    add_ci_patch_to_plot(fig, proc, colours[3], 2, 2)
+    for i in range(4):
+        add_ci_patch_to_plot(fig, quantiles[PANEL_SUBTITLES[i]], colours[i], i // 2 + 1, i % 2 + 1)
     return fig.update_layout(margin=MARGINS, height=600, showlegend=False)
-
-
