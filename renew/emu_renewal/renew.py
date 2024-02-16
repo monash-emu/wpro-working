@@ -100,7 +100,7 @@ class RenewalModel:
 
 class JaxModel(RenewalModel):
     def __init__(
-        self, population, start, end, seed_duration, n_process_periods, dens_obj, window_len, epoch, run_in,
+        self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, epoch, run_in,
     ):
         self.epoch = epoch
         msg = "Time data type not supported"
@@ -118,18 +118,15 @@ class JaxModel(RenewalModel):
             raise ValueError(msg)
         self.pop = population
         self.seed_duration = seed_duration
-        self.n_process_periods = n_process_periods
         self.window_len = window_len
-
-        x_proc_vals = jnp.linspace(self.start + run_in, self.end, self.n_process_periods + 1)
+        self.run_in = run_in
+        x_proc_vals = jnp.arange(self.start, self.end, proc_update_freq)
         self.x_proc_data = sinterp.get_scale_data(x_proc_vals)
-
         self.dens_obj = dens_obj
         self.model_times = jnp.arange(self.start, self.end + 1)
         self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
-        self.run_in = run_in
 
     def seed_func(self, t, seed):
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
