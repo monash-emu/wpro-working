@@ -1,8 +1,21 @@
+import numpy as np
+import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
 
 PANEL_SUBTITLES = ["cases", "susceptibles", "R", "transmission potential"]
 MARGINS = {m: 20 for m in ["t", "b", "l", "r"]}
+
+
+def get_spaghetti_from_params(model, params, model_func):
+    index_names = model.epoch.index_to_dti(model.model_times)
+    column_names = pd.MultiIndex.from_product([params.index.map(str), PANEL_SUBTITLES])
+    spaghetti = pd.DataFrame(index=index_names, columns=column_names)
+    for i, p in params.iterrows():
+        res = model_func(**{k: v for k, v in p.items() if "dispersion" not in k})
+        spaghetti.loc[:, str(i)] = np.array([res.incidence * p["cdr"], res.suscept, res.r_t, res.process]).T
+    spaghetti.columns = spaghetti.columns.swaplevel()
+    return spaghetti.sort_index(axis=1, level=0)
 
 
 def get_quantiles_from_spaghetti(spaghetti, quantiles):
@@ -50,3 +63,5 @@ def plot_uncertainty_patches(cases, targets, suscept, r, proc, colours):
     add_ci_patch_to_plot(fig, r, colours[2], 2, 1)
     add_ci_patch_to_plot(fig, proc, colours[3], 2, 2)
     return fig.update_layout(margin=MARGINS, height=600, showlegend=False)
+
+
