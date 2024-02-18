@@ -99,7 +99,7 @@ class RenewalModel:
 
 
 class JaxModel(RenewalModel):
-    def __init__(self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, run_in_req, epoch):
+    def __init__(self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, run_in_req, epoch=None):
         self.epoch = epoch
         msg = "Time data type not supported"
         if isinstance(start, int):
