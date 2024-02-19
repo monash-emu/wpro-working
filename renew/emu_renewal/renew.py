@@ -5,7 +5,7 @@ from jax import numpy as jnp
 from datetime import datetime
 
 from emu_renewal.process import cosine_multicurve, sinterp
-from emu_renewal.utils import format_date_for_str
+from emu_renewal.utils import format_date_for_str, round_sigfig
 
 
 class RenewalState(NamedTuple):
@@ -31,12 +31,12 @@ class RenewalModel:
         self.fixed_param_desc = (
             f"The main analysis period runs from {format_date_for_str(start)} "
             f"to {format_date_for_str(end)}, "
-            f"with a preceding run in period of {run_in_req}. "
+            f"with a preceding run in period of {run_in_req} days. "
         )
 
         self.pop = population
         self.fixed_param_desc += (
-            f"The starting model population is {population}"
+            f"The starting model population is {round_sigfig(population / 1e6, 2)} million persons. "
         )
         
         self.window_len = window_len
@@ -47,8 +47,19 @@ class RenewalModel:
 
         self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
-        self.run_in = int(self.x_proc_vals[0] - self.simulation_start)
+        process_start = int(self.x_proc_vals[0])
+        self.run_in = process_start - self.simulation_start
+        if run_in_req != self.run_in:
+            self.fixed_param_desc += (
+                "Because the analysis period is not an exact multiple "
+                "of the duration of a process interval, "
+                f"the run-in period is extended from {run_in_req} days "
+                f"to {self.run_in} days. "
+            )
+
         self.dens_obj = dens_obj
+        self.fixed_param_desc += f"\n{self.dens_obj.get_desc()}"
+
         self.seed_x_vals = jnp.linspace(self.simulation_start, self.start, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
