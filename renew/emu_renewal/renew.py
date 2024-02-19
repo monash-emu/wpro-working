@@ -73,6 +73,12 @@ class RenewalModel:
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         process_start = int(self.x_proc_vals[0])
         self.run_in = process_start - self.simulation_start
+        self.description["Variable process"] = (
+            "Each x-values for the requested points in the variable process "
+            "are set at evenly spaced intervals through the analysis period "
+            f"spaced by {proc_update_freq} days and "
+            "ending at the analysis end time. "
+        )
         if run_in_req != self.run_in:
             self.description["Variable process"] = (
                 "Because the analysis period is not an exact multiple "
@@ -150,15 +156,31 @@ class RenewalModel:
             "three specified points (start, peak, end). "
         )
 
-    def fit_process_curve(self, y_proc_vals):
+    def fit_process_curve(self, y_proc_req):
+        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
+        y_proc_data = sinterp.get_scale_data(y_proc_vals)
         cos_func = vmap(cosine_multicurve, in_axes=(0, None, None))
-        return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_vals))
+        return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_data))
+    
+    def describe_process(self):
+        self.description["Variable process"] += (
+            "The y-values for the variable process are linked with "
+            "a half-cosine interpolation function, "
+            "such that each interval between two request values are "
+            "joined with a function that scales smoothly from "
+            "a gradient of zero at the preceding point to "
+            "a gradeitn of zero at the subsequent point. "
+            "This approach also ensures a continuous gradient to the variable "
+            "process throughout the simulation interval. "
+            "After curve fitting, the sequence of parameter values pertaining to "
+            "the variable process are exponentiated, "
+            "such that parameter exploration for these quantities is "
+            "undertaken in the log-transformed space. "
+        )
 
     def func(self, gen_mean, gen_sd, y_proc_req, seed):
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
-        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
-        y_proc_data = sinterp.get_scale_data(y_proc_vals)
-        process_vals = self.fit_process_curve(y_proc_data)
+        process_vals = self.fit_process_curve(y_proc_req)
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
@@ -196,19 +218,7 @@ class RenewalModel:
             "running total of susceptibles at each iteration.\n"
         )
 
-        non_mech_desc = (
-            "## Non-mechanistic process\n"
-            "The time values corresponding to the submitted process values "
-            "are set to be evenly spaced throughout the simulation period. "
-            "Next, a continuous function of time was constructed from "
-            "the non-mechanistic process series values submitted to the model. "
-            "After curve fitting, the sequence of parameter values pertaining to "
-            "the non-mechanistic process are exponentiated, "
-            "such that parameter exploration for these quantities is "
-            "undertaken in the log-transformed space. "
-        )
-
-        return renew_desc + non_mech_desc
+        return renew_desc
 
     def get_description(
         self,
