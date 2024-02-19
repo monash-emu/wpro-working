@@ -98,8 +98,19 @@ class RenewalModel:
         return self.dens_obj.get_desc() + self.get_model_desc() + self.interp.get_desc()
 
 
+# Inheritance needs to be refactored
 class JaxModel(RenewalModel):
-    def __init__(self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, run_in_req, epoch=None):
+    def __init__(
+        self,
+        population,
+        start,
+        end,
+        run_in,
+        proc_update_freq,
+        dens_obj,
+        window_len,
+        epoch=None,
+    ):
         self.epoch = epoch
         msg = "Time data type not supported"
         if isinstance(start, int):
@@ -115,14 +126,17 @@ class JaxModel(RenewalModel):
         else:
             raise ValueError(msg)
         self.pop = population
-        self.seed_duration = seed_duration
         self.window_len = window_len
-        self.x_proc_vals = jnp.arange(self.end, self.start + run_in_req, -proc_update_freq)[::-1]
+
+        # Guarantee that there is random process point either on the final day of analysis, or within one process period after it
+        self.x_proc_vals = jnp.arange(
+            self.start + run_in, self.end + proc_update_freq, proc_update_freq
+        )
         self.model_times = jnp.arange(self.start, self.end + 1)
-        self.run_in = int(self.x_proc_vals[0] - self.model_times[0])
+        self.run_in = run_in
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.dens_obj = dens_obj
-        self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
+        self.seed_x_vals = jnp.linspace(self.start, self.start + run_in, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
 
