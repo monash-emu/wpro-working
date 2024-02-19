@@ -1,13 +1,10 @@
 from typing import List
-import numpy as np
 from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from emu_renewal.process import cosine_multicurve, sinterp
-from .process import LinearInterpFunc, CosInterpFunc
-from .distributions import GammaDens
 
 
 class RenewalState(NamedTuple):
@@ -23,82 +20,6 @@ class ModelResult(NamedTuple):
 
 
 class RenewalModel:
-    def __init__(self, pop, n_times, run_in, n_process_periods):
-        self.pop = pop
-        self.n_times = n_times
-        self.run_in = run_in
-        self.n_process_periods = n_process_periods
-        self.req_x_vals = np.linspace(0.0, n_times, n_process_periods)
-        self.interp = CosInterpFunc(self.req_x_vals)
-        self.dens_obj = GammaDens()
-        self.model_times = np.array([float(t) for t in range(self.n_times)])
-        self.seeder = CosInterpFunc([0.0, round(self.run_in / 2.0), self.run_in])
-
-    def seeding_func(self, seed_param):
-        return self.seeder.get_interp_func([0.0, np.exp(seed_param), 0.0])
-
-    def func(self, gen_mean: float, gen_sd: float, proc_req: List[float], seed: int) -> tuple:
-        densities = self.dens_obj.get_densities(self.n_times, gen_mean, gen_sd)
-        process_func = self.interp.get_interp_func(proc_req)
-        process_vals_exp = np.exp(process_func(self.model_times))
-
-        incidence = np.zeros(self.n_times)
-        suscept = np.zeros(self.n_times)
-        r_t = np.zeros(self.n_times)
-
-        seed_func = self.seeding_func(seed)
-        seed_0 = seed_func(0.0)
-        incidence[0] = seed_0
-        suscept[0] = self.pop - seed_0
-        r_t[0] = process_vals_exp[0] * suscept[0] / self.pop
-
-        for t in range(1, self.n_times):
-            r_t[t] = process_vals_exp[t] * suscept[t - 1] / self.pop
-            contribution_by_day = incidence[:t] * densities[:t][::-1]
-            seeding_component = seed_func(float(t))
-            renewal_component = contribution_by_day.sum() * r_t[t]
-            incidence[t] = seeding_component + renewal_component
-            suscept[t] = max(suscept[t - 1] - incidence[t], 0.0)
-
-        return ModelResult(incidence, suscept, r_t, process_vals_exp)
-
-    def get_model_desc(self):
-        renew_desc = (
-            "\n\n### Renewal process\n"
-            "Calculation of the renewal process "
-            "consists of multiplying the incidence values for the preceding days "
-            "by the reversed generation time distribution values. "
-            "This follows a standard formula, "
-            "described elsewhere by several groups,[@cori2013; @faria2021] i.e. "
-            "$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n"
-            "$R_t$ is calculated as the product of the proportion "
-            "of the population remaining susceptible "
-            "and the non-mechanistic random process "
-            "generated external to the renewal model. "
-            "The susceptible population is calculated by "
-            "subtracting the number of new incident cases from the "
-            "running total of susceptibles at each iteration.\n"
-        )
-
-        non_mech_desc = (
-            "\n\n### Non-mechanistic process\n"
-            "The time values corresponding to the submitted process values "
-            "are set to be evenly spaced throughout the simulation period. "
-            "Next, a continuous function of time was constructed from "
-            "the non-mechanistic process series values submitted to the model. "
-            "After curve fitting, the sequence of parameter values pertaining to "
-            "the non-mechanistic process are exponentiated, "
-            "such that parameter exploration for these quantities is "
-            "undertaken in the log-transformed space. "
-        )
-
-        return renew_desc + non_mech_desc
-
-    def get_full_desc(self):
-        return self.dens_obj.get_desc() + self.get_model_desc() + self.interp.get_desc()
-
-
-class JaxModel(RenewalModel):
     def __init__(self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, run_in_req, epoch=None):
         self.epoch = epoch
         msg = "Time data type not supported"
@@ -158,6 +79,38 @@ class JaxModel(RenewalModel):
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
         return ModelResult(**outputs)
+
+    def get_model_desc(self):
+        renew_desc = (
+            "\n\n### Renewal process\n"
+            "Calculation of the renewal process "
+            "consists of multiplying the incidence values for the preceding days "
+            "by the reversed generation time distribution values. "
+            "This follows a standard formula, "
+            "described elsewhere by several groups,[@cori2013; @faria2021] i.e. "
+            "$$i_t = R_t\sum_{\\tau<t} i_\\tau g_{t-\\tau}$$\n"
+            "$R_t$ is calculated as the product of the proportion "
+            "of the population remaining susceptible "
+            "and the non-mechanistic random process "
+            "generated external to the renewal model. "
+            "The susceptible population is calculated by "
+            "subtracting the number of new incident cases from the "
+            "running total of susceptibles at each iteration.\n"
+        )
+
+        non_mech_desc = (
+            "\n\n### Non-mechanistic process\n"
+            "The time values corresponding to the submitted process values "
+            "are set to be evenly spaced throughout the simulation period. "
+            "Next, a continuous function of time was constructed from "
+            "the non-mechanistic process series values submitted to the model. "
+            "After curve fitting, the sequence of parameter values pertaining to "
+            "the non-mechanistic process are exponentiated, "
+            "such that parameter exploration for these quantities is "
+            "undertaken in the log-transformed space. "
+        )
+
+        return renew_desc + non_mech_desc
 
     def get_full_desc(self):
 
