@@ -63,7 +63,7 @@ class RenewalModel:
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.simulation_start])  ## ***
+            proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.simulation_start])
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, seed)
