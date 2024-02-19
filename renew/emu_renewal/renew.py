@@ -5,6 +5,7 @@ from jax import numpy as jnp
 from datetime import datetime
 
 from emu_renewal.process import cosine_multicurve, sinterp
+from emu_renewal.utils import format_date_for_str
 
 
 class RenewalState(NamedTuple):
@@ -20,15 +21,30 @@ class ModelResult(NamedTuple):
 
 
 class RenewalModel:
-    def __init__(self, population, start, end, run_in_req, proc_update_freq, dens_obj, window_len, epoch=None):
+    def __init__(self, population, start, end, run_in_req, proc_update_freq, dens_obj, window_len, epoch=None):        
         self.epoch = epoch
+
         self.start = self.process_time_req(start)
         self.end = self.process_time_req(end)
-        self.pop = population
-        self.seed_duration = run_in_req
-        self.window_len = window_len
         self.simulation_start = self.start - run_in_req
         self.model_times = jnp.arange(self.simulation_start, self.end + 1)
+        self.fixed_param_desc = (
+            f"The main analysis period runs from {format_date_for_str(start)} "
+            f"to {format_date_for_str(end)}, "
+            f"with a preceding run in period of {run_in_req}. "
+        )
+
+        self.pop = population
+        self.fixed_param_desc += (
+            f"The starting model population is {population}"
+        )
+        
+        self.window_len = window_len
+        self.fixed_param_desc += (
+            "The preceding time window for renewal calculations "
+            f"is set to {window_len} days. "
+        )
+
         self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.run_in = int(self.x_proc_vals[0] - self.simulation_start)
