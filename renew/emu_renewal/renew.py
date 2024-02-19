@@ -20,32 +20,31 @@ class ModelResult(NamedTuple):
 
 
 class RenewalModel:
-    def __init__(self, population, start, end, seed_duration, proc_update_freq, dens_obj, window_len, run_in_req, epoch=None):
+    def __init__(self, population, start, end, run_in_req, proc_update_freq, dens_obj, window_len, epoch=None):
         self.epoch = epoch
-        msg = "Time data type not supported"
-        if isinstance(start, int):
-            self.start = start
-        elif isinstance(start, datetime):
-            self.start = int(epoch.dti_to_index(start))
-        else:
-            raise ValueError(msg)
-        if isinstance(end, int):
-            self.end = end
-        elif isinstance(end, datetime):
-            self.end = int(epoch.dti_to_index(end))
-        else:
-            raise ValueError(msg)
+        self.start = self.process_time_req(start)
+        self.end = self.process_time_req(end)
         self.pop = population
-        self.seed_duration = seed_duration
+        self.seed_duration = run_in_req
         self.window_len = window_len
-        self.x_proc_vals = jnp.arange(self.end, self.start + run_in_req, -proc_update_freq)[::-1]
-        self.model_times = jnp.arange(self.start, self.end + 1)
-        self.run_in = int(self.x_proc_vals[0] - self.model_times[0])
+        self.simulation_start = self.start - run_in_req
+        self.model_times = jnp.arange(self.simulation_start, self.end + 1)
+        self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
+        self.run_in = int(self.x_proc_vals[0] - self.simulation_start)
         self.dens_obj = dens_obj
-        self.seed_x_vals = jnp.linspace(self.start, self.start + self.seed_duration, 3)
+        self.seed_x_vals = jnp.linspace(self.simulation_start, self.start, 3)
         self.start_seed = 0.0
         self.end_seed = 0.0
+
+    def process_time_req(self, req):
+        msg = "Time data type not supported"
+        if isinstance(req, int):
+            return req
+        elif isinstance(req, datetime):
+            return int(self.epoch.dti_to_index(req))
+        else:
+            raise ValueError(msg)
 
     def seed_func(self, t, seed):
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
@@ -64,7 +63,7 @@ class RenewalModel:
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.start])
+            proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.simulation_start])  ## ***
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, seed)
