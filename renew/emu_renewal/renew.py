@@ -54,24 +54,18 @@ class RenewalModel:
         self.end = self.process_time_req(end)
         self.simulation_start = self.start - run_in_req
         self.model_times = jnp.arange(self.simulation_start, self.end + 1)
-        self.description = (
-            "\n### Fixed parameters\n"
-            f"The main analysis period runs from {format_date_for_str(start)} "
-            f"to {format_date_for_str(end)}, "
-            f"with a preceding run in period of {run_in_req} days. "
-        )
+        self.description = {
+            "Fixed parameters": (
+                f"The main analysis period runs from {format_date_for_str(start)} "
+                f"to {format_date_for_str(end)}, "
+                f"with a preceding run in period of {run_in_req} days. "
+            )
+        }
 
         # Population
         self.pop = population
-        self.description += (
+        self.description["Fixed parameters"] += (
             f"The starting model population is {round_sigfig(population / 1e6, 2)} million persons. "
-        )
-
-        # Window        
-        self.window_len = window_len
-        self.description += (
-            "The preceding time window for renewal calculations "
-            f"is set to {window_len} days. "
         )
 
         # Process
@@ -80,17 +74,23 @@ class RenewalModel:
         process_start = int(self.x_proc_vals[0])
         self.run_in = process_start - self.simulation_start
         if run_in_req != self.run_in:
-            self.description += (
-                "\n### Variable process\n"
+            self.description["Variable process"] = (
                 "Because the analysis period is not an exact multiple "
                 "of the duration of a process interval, "
                 f"the run-in period is extended from {run_in_req} days "
                 f"to {self.run_in} days. "
             )
 
-        # Generation
+        # Generation interval
         self.dens_obj = dens_obj
-        self.description += f"\n{self.dens_obj.get_desc()}"
+        self.description["Generation times"] = self.dens_obj.get_desc()
+        self.window_len = window_len
+        self.description["Generation times"] += (
+            "The generation interval for all calculations "
+            f"is truncated from {window_len} days, "
+            "on the assumption that the distribution's density "
+            "has reached negligible values once this period has elapsed. "
+        )
 
         # Seeding
         self.seed_x_vals = jnp.linspace(self.simulation_start, self.start, 3)
@@ -140,8 +140,7 @@ class RenewalModel:
         return cosine_multicurve(t, x_vals, y_vals)
     
     def describe_seed_func(self):
-        self.description += (
-            "\n### Seeding\n   "
+        self.description["Seeding"] = (
             f"The seeding process scales up from a value of {self.start_seed} "
             "at the start of the run-in period to it's peak value "
             "through the first half of the run-in, "
@@ -211,6 +210,16 @@ class RenewalModel:
 
         return renew_desc + non_mech_desc
 
-    def get_full_desc(self):
+    def get_description(
+        self,
+    ) -> str:
+        """Compile description of model.
 
-        return self.dens_obj.get_desc() + self.get_model_desc()
+        Returns:
+            Description
+        """
+        description = ""
+        for title, text in self.description.items():
+            description += f"\n### {title}\n"
+            description += text
+        return description
