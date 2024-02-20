@@ -64,11 +64,36 @@ def get_quant_df_from_spaghetti(
     return quantiles_df
 
 
-def get_standard_four_subplots():
-    return make_subplots(rows=2, cols=2, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.05, subplot_titles=PANEL_SUBTITLES)
+def get_standard_four_subplots() -> go.Figure:
+    """Get a figure object with standard formatting of 2 x 2 subplots.
+
+    Returns:
+        The figure object
+    """
+    return make_subplots(
+        rows=2, 
+        cols=2, 
+        shared_xaxes=True, 
+        vertical_spacing=0.05, 
+        horizontal_spacing=0.05, 
+        subplot_titles=PANEL_SUBTITLES,
+    )
 
 
-def plot_spaghetti(spaghetti, targets):
+def plot_spaghetti(
+    spaghetti: pd.DataFrame, 
+    targets: pd.Series,
+) -> go.Figure:
+    """Plot the outputs of the function that gets 
+    spaghetti outputs from parameters above.
+
+    Args:
+        spaghetti: The output of get_spaghetti_from_params
+        targets: The target values of the calibration algorithm
+
+    Returns:
+        The figure object
+    """
     fig = get_standard_four_subplots()
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     for i in range(4):
@@ -76,19 +101,63 @@ def plot_spaghetti(spaghetti, targets):
     return fig.update_layout(margin=MARGINS, height=600).update_yaxes(rangemode="tozero")
 
 
-def get_area_from_df(df, columns, colour):
+def get_area_from_df(
+    df: pd.DataFrame,
+    columns: List[float], 
+    colour: str,
+) -> go.Scatter:
+    """Get a patch object to add to a plotly graph from a dataframe
+    that contains data for the upper and lower margins.
+
+    Args:
+        df: The data
+        columns: The names of the columns containing the upper and lower margins
+        colour: The colour request
+
+    Returns:
+        The patch
+    """
     x_vals = df.index.to_list() + df.index[::-1].to_list()
     y_vals = df[columns[0]].to_list() + df[columns[1]][::-1].to_list()
     return go.Scatter(x=x_vals, y=y_vals, line={"width": 0.0, "color": colour}, fill="toself")
 
 
-def add_ci_patch_to_plot(fig, df, colour, row, col):
+def add_ci_patch_to_plot(
+    fig: go.Figure, 
+    df: pd.DataFrame, 
+    colour: str, 
+    row: int, 
+    col: int,
+):
+    """Add a median line and confidence interval patch to a plotly figure object.
+
+    Args:
+        fig: The figure object
+        df: The data to plot
+        colour: The colour request
+        row: The row of the subplot figure
+        col: The column of the subplot figure
+    """
     x_vals = df.index.to_list() + df.index[::-1].to_list()
     fig.add_trace(get_area_from_df(df, columns=[0.05, 0.95], colour=colour), row=row, col=col)
     fig.add_trace(go.Scatter(x=x_vals, y=df[0.5], line={"color": colour}), row=row, col=col)
 
 
-def plot_uncertainty_patches(quantiles, targets, colours):
+def plot_uncertainty_patches(
+    quantiles: List[float], 
+    targets: pd.Series, 
+    colours: List[str],
+) -> go.Figure:
+    """Create the main uncertainty output figure for a renewal analysis.
+
+    Args:
+        quantiles: Requested quantiles
+        targets: The target values of the calibration algorithm
+        colour: The colour requests
+
+    Returns:
+        The figure object        
+    """
     fig = get_standard_four_subplots()
     fig.add_trace(go.Scatter(x=targets.index, y=targets, mode="markers"), row=1, col=1)
     for i in range(4):
