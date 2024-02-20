@@ -6,7 +6,7 @@ from datetime import datetime
 
 from summer2.utils import Epoch
 
-from emu_renewal.process import cosine_multicurve, sinterp
+from emu_renewal.process import sinterp, MultiCurve
 from emu_renewal.distributions import Dens
 from emu_renewal.utils import format_date_for_str, round_sigfig
 
@@ -31,7 +31,9 @@ class RenewalModel:
         end: Union[datetime, int], 
         run_in_req: int, 
         proc_update_freq: int, 
+        proc_fitter: MultiCurve,
         dens_obj: Dens, 
+        seed_fitter: MultiCurve,
         window_len: int, 
         epoch: Optional[Epoch],
     ):
@@ -43,6 +45,7 @@ class RenewalModel:
             end: End time for the analysis period
             run_in_req: Duration of additional period preceding the analysis period
             proc_update_freq: Frequency with with the vairable process is updated
+            proc_fitter: 
             dens_obj: Generation time distribution
             window_len: How far to look back in calculating the renewal process
             epoch: Reference epoch for calculating dates. Defaults to None.
@@ -71,6 +74,7 @@ class RenewalModel:
         # Process
         self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
+        self.proc_fitter = proc_fitter
         process_start = int(self.x_proc_vals[0])
         self.run_in = process_start - self.simulation_start
         self.description["Variable process"] = (
@@ -100,6 +104,7 @@ class RenewalModel:
 
         # Seeding
         self.seed_x_vals = jnp.linspace(self.simulation_start, self.start, 3)
+        self.seed_fitter = seed_fitter
         self.start_seed = 0.0
         self.end_seed = 0.0
         self.describe_seed_func()
@@ -146,18 +151,16 @@ class RenewalModel:
         """
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
         y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(log_seed_peak), self.end_seed]))
-        return cosine_multicurve(t, x_vals, y_vals)
+        return self.seed_fitter.get_multicurve(t, x_vals, y_vals)
     
     def describe_seed_func(self):
         self.description["Seeding"] = (
-            f"The seeding process scales up from a value of {self.start_seed} "
+            f"The seeding function scales up from a value of {self.start_seed} "
             "at the start of the run-in period to it's peak value "
             "through the first half of the run-in, "
             f"and then decays back to {self.end_seed} at the end of the run-in. "
-            "This is implemented using a half-cosine function "
-            "that is translated and scaled to reach zero gradient at each of the "
-            "three specified points (start, peak, end). "
         )
+        self.description["Seeding"] += self.seed_fitter.get_description()
 
     def fit_process_curve(
         self, 
@@ -165,19 +168,12 @@ class RenewalModel:
     ) -> jnp.array:
         y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
-        cos_func = vmap(cosine_multicurve, in_axes=(0, None, None))
+        cos_func = vmap(self.proc_fitter.get_multicurve, in_axes=(0, None, None))
         return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_data))
     
     def describe_process(self):
+        self.description["Variable process"] += self.proc_fitter.get_description()
         self.description["Variable process"] += (
-            "The y-values for the variable process are linked with "
-            "a half-cosine interpolation function, "
-            "such that each interval between two request values are "
-            "joined with a function that scales smoothly from "
-            "a gradient of zero at the preceding point to "
-            "a gradient of zero at the subsequent point. "
-            "This approach also ensures a continuous gradient to the variable "
-            "process throughout the simulation interval. "
             "After curve fitting, the sequence of parameter values pertaining to "
             "the variable process are exponentiated, "
             "such that parameter exploration for these quantities is "
@@ -204,6 +200,7 @@ class RenewalModel:
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req)
+        self.describe_process()
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
