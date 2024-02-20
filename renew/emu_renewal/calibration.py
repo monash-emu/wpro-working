@@ -97,6 +97,6 @@ class StandardCalib(Calibration):
             "(constant through time) case detection proportion. "
             "The dispersion parameter for this comparison of log values is "
             "also calibrated using a uniform distribution, "
-            f"which is calibrated in the range {round(float(self.data_disp_range[0]))} "
-            f"to {round(float(self.data_disp_range[1]))}. "
+            f"which is calibrated in the range {round(float(self.data_disp_range[0]), 3)} "
+            f"to {round(float(self.data_disp_range[1]), 3)}. "
         )
