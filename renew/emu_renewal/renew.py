@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Union, Optional, List
 from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
@@ -104,6 +104,9 @@ class RenewalModel:
         self.end_seed = 0.0
         self.describe_seed_func()
 
+        # Renewal process
+        self.describe_renewal()
+
     def process_time_req(
         self, 
         req: Union[datetime, int],
@@ -130,7 +133,7 @@ class RenewalModel:
     def seed_func(
         self, 
         t: float, 
-        seed_peak: float,
+        log_seed_peak: float,
     ) -> float:
         """See describe_seed_func
 
@@ -142,7 +145,7 @@ class RenewalModel:
             Seeding rate at the requested time
         """
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
-        y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(seed_peak), self.end_seed]))
+        y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(log_seed_peak), self.end_seed]))
         return cosine_multicurve(t, x_vals, y_vals)
     
     def describe_seed_func(self):
@@ -156,7 +159,10 @@ class RenewalModel:
             "three specified points (start, peak, end). "
         )
 
-    def fit_process_curve(self, y_proc_req):
+    def fit_process_curve(
+        self, 
+        y_proc_req: List[float],
+    ) -> jnp.array:
         y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
         cos_func = vmap(cosine_multicurve, in_axes=(0, None, None))
@@ -169,7 +175,7 @@ class RenewalModel:
             "such that each interval between two request values are "
             "joined with a function that scales smoothly from "
             "a gradient of zero at the preceding point to "
-            "a gradeitn of zero at the subsequent point. "
+            "a gradient of zero at the subsequent point. "
             "This approach also ensures a continuous gradient to the variable "
             "process throughout the simulation interval. "
             "After curve fitting, the sequence of parameter values pertaining to "
@@ -178,7 +184,24 @@ class RenewalModel:
             "undertaken in the log-transformed space. "
         )
 
-    def func(self, gen_mean, gen_sd, y_proc_req, seed):
+    def renewal_func(
+        self, 
+        gen_mean: float, 
+        gen_sd: float, 
+        y_proc_req: List[float], 
+        log_seed_peak: float,
+    ) -> ModelResult:
+        """See describe_renewal
+
+        Args:
+            gen_mean: Generation time mean
+            gen_sd: Generation time standard deviation
+            y_proc_req: Values of the variable process
+            log_seed_peak: Log-transformed peak seeding value
+
+        Returns:
+            Results of the model run
+        """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req)
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
@@ -187,7 +210,7 @@ class RenewalModel:
             proc_val = jnp.where(t < self.run_in, 1.0, process_vals[t - self.simulation_start])
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
-            seed_component = self.seed_func(t, seed)
+            seed_component = self.seed_func(t, log_seed_peak)
             total_new_inc = renewal + seed_component
             total_new_inc = jnp.where(total_new_inc > state.suscept, state.suscept, total_new_inc)
             suscept = state.suscept - total_new_inc
@@ -200,9 +223,8 @@ class RenewalModel:
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
         return ModelResult(**outputs)
 
-    def get_model_desc(self):
-        renew_desc = (
-            "## Renewal process\n"
+    def describe_renewal(self):
+        self.description["Renewal process"] = (
             "Calculation of the renewal process "
             "consists of multiplying the incidence values for the preceding days "
             "by the reversed generation time distribution values. "
@@ -215,15 +237,16 @@ class RenewalModel:
             "generated external to the renewal model. "
             "The susceptible population is calculated by "
             "subtracting the number of new incident cases from the "
-            "running total of susceptibles at each iteration.\n"
+            "running total of susceptibles at each iteration. "
+            "If incidence exceeds the number of susceptible persons available "
+            "for infection in the model, incidence is capped at the "
+            "remaining number of susceptibles. "
         )
-
-        return renew_desc
 
     def get_description(
         self,
     ) -> str:
-        """Compile description of model.
+        """Compile the description of model.
 
         Returns:
             Description
@@ -233,3 +256,4 @@ class RenewalModel:
             description += f"\n### {title}\n"
             description += text
         return description
+    

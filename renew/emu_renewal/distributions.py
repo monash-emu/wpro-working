@@ -43,38 +43,6 @@ class GammaDens(Dens):
         a = mean / scale
         return {"a": a, "scale": scale}
 
-    def get_densities(self, n_times: int, req_mean: float, req_sd: float,) -> np.array:
-        """See get_desc
-
-        Args:
-            n_times: Number of integer increments for the calculation
-            req_mean: Requested mean
-            req_sd: Requested standard deviation
-
-        Returns:
-            The integrals of the probability density
-        """
-        return np.diff(gamma.cdf(range(n_times + 1), **self.get_params(req_mean, req_sd)))
-
-    def get_desc(self):
-        """Get the description of this code.
-
-        Returns:
-            The description in markdown format
-        """
-        return (
-            "\n\n### Generation times\n"
-            "Generation times for each day are calculated by "
-            "first finding the parameters needed to construct "
-            "a gamma distribution with mean and standard deviation "
-            "equal to those specified by the submitted parameter values. "
-            "The integrals of the probability density of this distribution "
-            "between consecutive integer values are then calculated for "
-            "later combination with the incidence time series. "
-        )
-
-
-class JaxGammaDens(GammaDens):
     def get_densities(self, window_len, mean, sd):
         return jnp.diff(jaxgamma.cdf(jnp.arange(window_len + 1), **self.get_params(mean, sd)))
 

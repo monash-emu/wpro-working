@@ -4,7 +4,7 @@ import numpy as np
 def format_date_for_str(date):
     ord_excepts = {1: "st", 2: "nd", 3: "rd"}
     ordinal = ord_excepts.get(date.day % 10, "th")
-    return date.strftime(f"%-d<sup>{ordinal}</sup> %B %Y")
+    return f"{date.day}<sup>{ordinal}</sup> {date: %B} {date: %Y}"
 
 
 def round_sigfig(
