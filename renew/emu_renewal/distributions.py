@@ -29,7 +29,7 @@ class GammaDens(Dens):
     """
 
     def get_params(self, mean: float, sd: float,) -> Dict[str, float]:
-        """See get_desc
+        """See get_desc below.
 
         Args:
             mean: Requested mean
