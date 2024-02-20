@@ -1,7 +1,19 @@
 import numpy as np
+from datetime import datetime
 
 
-def format_date_for_str(date):
+def format_date_for_str(
+    date: datetime,
+) -> str:
+    """Get a markdown-ready string that could be included in
+    paragraph text from a datetime object.
+
+    Args:
+        date: The datetime object
+
+    Returns:
+        The formatted string
+    """
     ord_excepts = {1: "st", 2: "nd", 3: "rd"}
     ordinal = ord_excepts.get(date.day % 10, "th")
     return f"{date.day}<sup>{ordinal}</sup> {date: %B} {date: %Y}"
