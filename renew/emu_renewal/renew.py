@@ -91,6 +91,7 @@ class RenewalModel:
                 f"the run-in period is extended from {self.run_in} days "
                 f"to {self.constant_process_time} days. "
             )
+        self.describe_process()
 
         # Generation interval
         self.dens_obj = dens_obj
@@ -209,7 +210,6 @@ class RenewalModel:
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req)
-        self.describe_process()
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
