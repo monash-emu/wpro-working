@@ -45,6 +45,10 @@ class StandardCalib(Calibration):
         """
         super().__init__(epi_model, data)
         self.data_disp_range = [jnp.log(1.0), jnp.log(1.5)]
+        self.proc_disp_dist_val = 1.0
+        data_indices = epi_model.epoch.dti_to_index(data.index).astype(int)
+        model_indices = pd.Index(epi_model.model_times)
+        self.comparison_indices = jnp.array(data_indices.intersection(model_indices) - epi_model.model_times[0])
 
     def get_model_notifications(self, gen_mean, gen_sd, proc, seed, cdr):
         """Get the modelled notifications from a set of epi parameters.
@@ -59,7 +63,7 @@ class StandardCalib(Calibration):
         Returns:
             Case notification rate
         """
-        return self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[self.epi_model.run_in:] * cdr
+        return self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[self.comparison_indices] * cdr
 
     def calibration(
         self, 
@@ -71,7 +75,7 @@ class StandardCalib(Calibration):
             params: Parameters with single value
         """
         param_updates = {k: numpyro.sample(k, dist.Uniform(v["lower"], v["upper"])) for k, v in params.items()}
-        proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(1.0))
+        proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_dist_val))
         n_process_periods = self.n_process_periods
         proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)
         param_updates["proc"] = numpyro.sample("proc", proc_dist)
