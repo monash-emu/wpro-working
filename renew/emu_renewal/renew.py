@@ -44,7 +44,7 @@ class RenewalModel:
             end: End time for the analysis period
             run_in_req: Duration of additional period preceding the analysis period
             proc_update_freq: Frequency with with the vairable process is updated
-            proc_fitter: 
+            proc_fitter: The object containing the method for fitting to the variable process series
             dens_obj: Generation time distribution
             window_len: How far to look back in calculating the renewal process
             epoch: Reference epoch for calculating dates. Defaults to None.
