@@ -23,7 +23,11 @@ class Calibration:
         """
         self.epi_model = epi_model
         self.n_process_periods = len(self.epi_model.x_proc_data.points)
-        self.data = data
+
+        model_dates_idx = self.epi_model.epoch.index_to_dti(self.epi_model.analysis_times)
+        common_dates_idx = data.index.intersection(model_dates_idx)
+        self.data = jnp.array(data.loc[common_dates_idx])
+        self.common_model_idx = jnp.array(self.epi_model.epoch.dti_to_index(common_dates_idx).astype(int) - self.epi_model.model_times[0])
 
     def calibration(self):
         pass
@@ -46,9 +50,6 @@ class StandardCalib(Calibration):
         super().__init__(epi_model, data)
         self.data_disp_range = [jnp.log(1.0), jnp.log(1.5)]
         self.proc_disp_dist_val = 1.0
-        data_indices = epi_model.epoch.dti_to_index(data.index).astype(int)
-        model_indices = pd.Index(epi_model.model_times)
-        self.comparison_indices = jnp.array(data_indices.intersection(model_indices) - epi_model.model_times[0])
 
     def get_model_notifications(self, gen_mean, gen_sd, proc, seed, cdr):
         """Get the modelled notifications from a set of epi parameters.
@@ -63,7 +64,7 @@ class StandardCalib(Calibration):
         Returns:
             Case notification rate
         """
-        return self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[self.comparison_indices] * cdr
+        return self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[self.common_model_idx] * cdr
 
     def calibration(
         self, 
@@ -80,7 +81,7 @@ class StandardCalib(Calibration):
         proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)
         param_updates["proc"] = numpyro.sample("proc", proc_dist)
         log_model_res = jnp.log(jit(self.get_model_notifications)(**param_updates))
-        log_target = jnp.log(jnp.array(self.data))
+        log_target = jnp.log(self.data)
         dispersion = numpyro.sample("dispersion", dist.Uniform(*self.data_disp_range))
         like = dist.Normal(log_model_res, dispersion).log_prob(log_target).sum()
         numpyro.factor("notifications_ll", like)

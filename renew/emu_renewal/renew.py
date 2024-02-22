@@ -57,6 +57,7 @@ class RenewalModel:
         self.end = self.process_time_req(end)
         self.run_in = run_in
         self.simulation_start = self.start - self.run_in
+        self.analysis_times = jnp.arange(self.start, self.end + 1)
         self.model_times = jnp.arange(self.simulation_start, self.end + 1)
         self.description = {
             "Fixed parameters": (
