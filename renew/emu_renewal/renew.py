@@ -51,7 +51,7 @@ class RenewalModel:
         """
 
         # Times
-        self.epoch = Epoch(datetime(2019, 12, 31))
+        self.epoch = Epoch(start) if isinstance(start, datetime) else None
         self.start = self.process_time_req(start)
         self.end = self.process_time_req(end)
         self.run_in = run_in
@@ -76,20 +76,20 @@ class RenewalModel:
         self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.proc_fitter = proc_fitter
-        process_start = int(self.x_proc_vals[0])
-        self.constant_process_time = process_start - self.simulation_start
+        self.process_start = int(self.x_proc_vals[0])
+        self.constant_process_time = self.process_start - self.simulation_start
         self.description["Variable process"] = (
             "Each x-values for the requested points in the variable process "
             "are set at evenly spaced intervals through the analysis period "
             f"spaced by {proc_update_freq} days and "
             "ending at the analysis end time. "
         )
-        if self.run_in != self.constant_process_time:
+        if self.start < self.process_start:
             self.description["Variable process"] = (
                 "Because the analysis period is not an exact multiple "
                 "of the duration of a process interval, "
                 f"the run-in period is extended from {self.run_in} days "
-                f"to {self.constant_process_time} days. "
+                f"to {self.process_start} days. "
             )
         self.describe_process()
 
@@ -213,7 +213,7 @@ class RenewalModel:
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.constant_process_time, 1.0, process_vals[t - self.simulation_start])
+            proc_val = jnp.where(t < self.process_start, 1.0, process_vals[t - self.simulation_start])
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, log_seed_peak)
