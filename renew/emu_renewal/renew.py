@@ -51,7 +51,7 @@ class RenewalModel:
         """
 
         # Times
-        self.epoch = Epoch(datetime(2019, 12, 31))
+        self.epoch = Epoch(start)
         self.start = self.process_time_req(start)
         self.end = self.process_time_req(end)
         self.run_in = run_in
@@ -213,7 +213,7 @@ class RenewalModel:
         init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.constant_process_time, 1.0, process_vals[t - self.simulation_start])
+            proc_val = jnp.where(t < self.x_proc_vals[0], 1.0, process_vals[t - self.simulation_start])
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
             seed_component = self.seed_func(t, log_seed_peak)

@@ -1,4 +1,5 @@
 from typing import Dict
+import numpy as np
 from jax import numpy as jnp
 from jax import jit
 import pandas as pd
@@ -24,10 +25,10 @@ class Calibration:
         self.epi_model = epi_model
         self.n_process_periods = len(self.epi_model.x_proc_data.points)
 
-        model_dates_idx = self.epi_model.epoch.index_to_dti(self.epi_model.analysis_times)
-        common_dates_idx = data.index.intersection(model_dates_idx)
+        analysis_dates_idx = self.epi_model.epoch.index_to_dti(self.epi_model.analysis_times)
+        common_dates_idx = data.index.intersection(analysis_dates_idx)
         self.data = jnp.array(data.loc[common_dates_idx])
-        self.common_model_idx = jnp.array(self.epi_model.epoch.dti_to_index(common_dates_idx).astype(int) - self.epi_model.model_times[0])
+        self.common_model_idx = np.array(self.epi_model.epoch.dti_to_index(common_dates_idx).astype(int)) - self.epi_model.model_times[0]
 
     def calibration(self):
         pass
