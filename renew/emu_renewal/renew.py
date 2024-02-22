@@ -35,7 +35,6 @@ class RenewalModel:
         dens_obj: Dens, 
         seed_fitter: MultiCurve,
         window_len: int, 
-        epoch: Optional[Epoch],
     ):
         """Standard renewal model object.
 
@@ -52,7 +51,7 @@ class RenewalModel:
         """
 
         # Times
-        self.epoch = epoch
+        self.epoch = Epoch(datetime(2019, 12, 31))
         self.start = self.process_time_req(start)
         self.end = self.process_time_req(end)
         self.run_in = run_in
