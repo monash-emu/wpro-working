@@ -163,3 +163,29 @@ def plot_uncertainty_patches(
     for i in range(4):
         add_ci_patch_to_plot(fig, quantiles[PANEL_SUBTITLES[i]], colours[i], i // 2 + 1, i % 2 + 1)
     return fig.update_layout(margin=MARGINS, height=600, showlegend=False).update_yaxes(rangemode="tozero")
+
+
+def plot_3d_spaghetti(
+    spaghetti: pd.DataFrame, 
+    column_req: List[str],
+) -> go.Figure:
+    """Plot to variables on y and z axes against index
+    of a standard spaghetti dataframe.
+
+    Args:
+        spaghetti: Output of get_spaghetti_from_params
+        column_req: The columns to plot against one-another
+
+    Returns:
+        The figure object
+    """
+    fig = go.Figure()
+    col_1, col_2 = column_req
+    for i in spaghetti.columns.get_level_values(1):
+        x_data = spaghetti.index
+        y_data = spaghetti[(col_1, i)]
+        z_data = spaghetti[(col_2, i)]
+        trace = go.Scatter3d(x=x_data, y=y_data, z=z_data, mode="lines", line={"width": 5.0})
+        fig.add_trace(trace)
+    axis_titles = {"xaxis": {"title": "time"}, "yaxis": {"title": col_1}, "zaxis": {"title": col_2}}
+    return fig.update_layout(showlegend=False, scene=axis_titles, height=800)
