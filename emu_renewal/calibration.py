@@ -76,7 +76,7 @@ class StandardCalib(Calibration):
         Args:
             params: Parameters with single value
         """
-        param_updates = {k: numpyro.sample(k, dist.Uniform(v["lower"], v["upper"])) for k, v in params.items()}
+        param_updates = {k: numpyro.sample(k, v) for k, v in params.items()}
         proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_dist_val))
         n_process_periods = self.n_process_periods
         proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)
