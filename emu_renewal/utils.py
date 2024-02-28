@@ -4,6 +4,7 @@ from datetime import datetime
 
 def format_date_for_str(
     date: datetime,
+    include_year: bool=True,
 ) -> str:
     """Get a markdown-ready string that could be included in
     paragraph text from a datetime object.
@@ -16,7 +17,10 @@ def format_date_for_str(
     """
     ord_excepts = {1: "st", 2: "nd", 3: "rd"}
     ordinal = ord_excepts.get(date.day % 10, "th")
-    return f"{date.day}<sup>{ordinal}</sup> {date: %B} {date: %Y}"
+    if include_year:
+        return f"{date.day}<sup>{ordinal}</sup> {date: %B} {date: %Y}"
+    else:
+        return f"{date.day}<sup>{ordinal}</sup> {date: %B}"
 
 
 def round_sigfig(
@@ -32,3 +36,57 @@ def round_sigfig(
         sig_figs: Number of significant figures to round to
     """
     return round(value, -int(np.floor(np.log10(abs(value)))) + sig_figs - 1) if value != 0.0 else 0.0
+
+
+def get_proc_period_from_index(
+    idx: int, 
+    model,
+) -> str:
+    """Get markdown-formatted string for date of
+    variable process period from its index number.
+
+    Args:
+        idx: The sequence of the process period
+        model: The renewal model
+
+    Returns:
+        The formatted string
+    """
+    start = int(model.x_proc_vals[idx])
+    end = start + model.proc_update_freq - 1
+    start_date = format_date_for_str(model.epoch.number_to_datetime(start), include_year=False)
+    end_date = format_date_for_str(model.epoch.number_to_datetime(end), include_year=False)
+    return f"Variable process update for {start_date} to {end_date}"
+
+
+map_dict = {
+    "cdr": "Case detection proportion",
+    "gen_mean": "Generation time, mean",
+    "gen_sd": "Generation time, standard deviation",
+    "seed": "Log peak seeding rate",
+    "proc_dispersion": "Variable process update dispersion",
+    "dispersion": "Data comparison dispersion",
+}
+
+
+def get_adjust_idata_index(
+    model,
+) -> callable:
+    """Get function to adjust the dataframe index
+    containing the model parameters.
+
+    Args:
+        model: The model
+
+    Returns:
+        The adjuster function
+    """
+    def adjust_idata_index(i):
+        if i.startswith("proc["):
+            i_proc = int(i[i.find("[") + 1: i.find("]")])
+            return get_proc_period_from_index(i_proc, model)
+        elif i in map_dict:
+            return map_dict[i]
+        else:
+            raise ValueError("Parameter not found")
+    return adjust_idata_index
