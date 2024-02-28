@@ -90,3 +90,20 @@ def get_adjust_idata_index(
         else:
             raise ValueError("Parameter not found")
     return adjust_idata_index
+
+
+col_names_map = {
+    "sd": "standard deviation",
+    "hdi_3%": "high-density interval, 3%",
+    "hdi_97%": "high-density interval, 97%",
+    "ess_bulk": "effective sample size, bulk",
+    "ess_tail": "effective sample size, tail",
+    "r_hat": "_&#x0052;&#x0302;_",
+}
+
+
+def adjust_summary_cols(summary):
+    summary = summary.rename(columns=col_names_map)
+    summary = summary.drop(["mcse_mean", "mcse_sd"], axis=1)
+    summary.columns = summary.columns.str.capitalize()
+    return summary
