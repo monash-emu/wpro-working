@@ -260,7 +260,7 @@ class RenewalModel:
         """
         description = ""
         for title, text in self.description.items():
-            description += f"\n### {title}\n"
+            description += f"\n\n### {title}\n"
             description += text
         return description
     
