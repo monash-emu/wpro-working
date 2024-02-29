@@ -56,7 +56,7 @@ def get_proc_period_from_index(
     end = start + model.proc_update_freq - 1
     start_date = format_date_for_str(model.epoch.number_to_datetime(start), include_year=False)
     end_date = format_date_for_str(model.epoch.number_to_datetime(end), include_year=False)
-    return f"Variable process update for {start_date} to {end_date}"
+    return f"Variable process update, {start_date} to {end_date}"
 
 
 map_dict = {
