@@ -54,7 +54,6 @@ class StandardCalib(Calibration):
             data: The data targets
         """
         super().__init__(epi_model, data)
-        # self.data_disp_range = [jnp.log(1.0), jnp.log(1.5)]
         self.data_disp_sd = 0.1
         self.proc_disp_sd = 0.1
 
@@ -94,9 +93,7 @@ class StandardCalib(Calibration):
         param_updates["proc"] = numpyro.sample("proc", proc_dist)
         log_model_res = jnp.log(jit(self.get_model_notifications)(**param_updates))
         log_target = jnp.log(self.data)
-        dispersion = numpyro.sample(
-            "dispersion", dist.HalfNormal(self.data_disp_sd)
-        )  # dist.Uniform(*self.data_disp_range))
+        dispersion = numpyro.sample("dispersion", dist.HalfNormal(self.data_disp_sd))
         like = dist.Normal(log_model_res, dispersion).log_prob(log_target).sum()
         numpyro.factor("notifications_ll", like)
 
@@ -108,14 +105,14 @@ class StandardCalib(Calibration):
             "are estimated from normal prior distributions centred at no "
             "change from the value of the previous stage of the process. "
             "The dispersion of the variable process is calibrated, "
-            "using a half-normal distribution. "
+            "using a half-normal distribution "
+            f"with standard deviation {self.proc_disp_sd}"
             "The log of the modelled notification rate for each parameter set "
             "is compared against the data from the end of the run-in phase "
             "through to the end of the analysis. "
             "Modelled notifications are calculated as the product of modelled incidence and the "
             "(constant through time) case detection proportion. "
             "The dispersion parameter for this comparison of log values is "
-            "also calibrated using a uniform distribution, "
-            f"which is calibrated in the range {round(float(self.data_disp_range[0]), 3)} "
-            f"to {round(float(self.data_disp_range[1]), 3)}. "
+            "also calibrated using a half-normal distribution, "
+            f"with standard deviation {self.data_disp_sd}. "
         )
