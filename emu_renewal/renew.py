@@ -25,16 +25,16 @@ class ModelResult(NamedTuple):
 
 class RenewalModel:
     def __init__(
-        self, 
-        population: float, 
-        start: Union[datetime, int], 
-        end: Union[datetime, int], 
-        run_in: int, 
-        proc_update_freq: int, 
+        self,
+        population: float,
+        start: Union[datetime, int],
+        end: Union[datetime, int],
+        run_in: int,
+        proc_update_freq: int,
         proc_fitter: MultiCurve,
-        dens_obj: Dens, 
+        dens_obj: Dens,
         seed_fitter: MultiCurve,
-        window_len: int, 
+        window_len: int,
     ):
         """Standard renewal model object.
 
@@ -68,9 +68,9 @@ class RenewalModel:
 
         # Population
         self.pop = population
-        self.description["Fixed parameters"] += (
-            f"The starting model population is {round_sigfig(population / 1e6, 2)} million persons. "
-        )
+        self.description[
+            "Fixed parameters"
+        ] += f"The starting model population is {round_sigfig(population / 1e6, 2)} million persons. "
 
         # Process
         self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
@@ -115,7 +115,7 @@ class RenewalModel:
         self.describe_renewal()
 
     def process_time_req(
-        self, 
+        self,
         req: Union[datetime, int],
     ) -> int:
         """Sort out a user requested date.
@@ -138,23 +138,25 @@ class RenewalModel:
             raise ValueError(msg)
 
     def seed_func(
-        self, 
-        t: float, 
+        self,
+        t: float,
         log_seed_peak: float,
     ) -> float:
         """See describe_seed_func
 
         Args:
             t: Model time
-            seed_peak: Peak seeding rate 
+            seed_peak: Peak seeding rate
 
         Returns:
             Seeding rate at the requested time
         """
         x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
-        y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(log_seed_peak), self.end_seed]))
+        y_vals = sinterp.get_scale_data(
+            jnp.array([self.start_seed, jnp.exp(log_seed_peak), self.end_seed])
+        )
         return self.seed_fitter.get_multicurve(t, x_vals, y_vals)
-    
+
     def describe_seed_func(self):
         self.description["Seeding"] = (
             f"The seeding function scales up from a value of {self.start_seed} "
@@ -165,7 +167,7 @@ class RenewalModel:
         self.description["Seeding"] += self.seed_fitter.get_description()
 
     def fit_process_curve(
-        self, 
+        self,
         y_proc_req: List[float],
     ) -> jnp.array:
         """See describe_process below.
@@ -180,7 +182,7 @@ class RenewalModel:
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
         cos_func = vmap(self.proc_fitter.get_multicurve, in_axes=(0, None, None))
         return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_data))
-    
+
     def describe_process(self):
         self.description["Variable process"] += self.proc_fitter.get_description()
         self.description["Variable process"] += (
@@ -191,10 +193,10 @@ class RenewalModel:
         )
 
     def renewal_func(
-        self, 
-        gen_mean: float, 
-        gen_sd: float, 
-        y_proc_req: List[float], 
+        self,
+        gen_mean: float,
+        gen_sd: float,
+        y_proc_req: List[float],
         log_seed_peak: float,
     ) -> ModelResult:
         """See describe_renewal
@@ -210,14 +212,17 @@ class RenewalModel:
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req)
-        init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
+        # init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
+        init_state = RenewalState(jnp.ones(self.window_len) * log_seed_peak, self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.process_start, 1.0, process_vals[t - self.simulation_start])
+            proc_val = jnp.where(
+                t < self.process_start, 1.0, process_vals[t - self.simulation_start]
+            )
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
-            seed_component = self.seed_func(t, log_seed_peak)
-            total_new_inc = renewal + seed_component
+            # seed_component = self.seed_func(t, log_seed_peak)
+            total_new_inc = renewal  # + seed_component
             total_new_inc = jnp.where(total_new_inc > state.suscept, state.suscept, total_new_inc)
             suscept = state.suscept - total_new_inc
             incidence = jnp.zeros_like(state.incidence)
@@ -262,4 +267,3 @@ class RenewalModel:
             description += f"\n### {title}\n"
             description += text
         return description
-    

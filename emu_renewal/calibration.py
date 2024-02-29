@@ -46,6 +46,9 @@ class StandardCalib(Calibration):
         self,
         epi_model: RenewalModel,
         data: pd.Series,
+        priors: dict[str, dist.Distribution],
+        data_dispersion_sd=1.0,
+        process_dispersion_sd=1.0,
     ):
         """Set up calibration object with epi model and data.
 
@@ -55,8 +58,15 @@ class StandardCalib(Calibration):
         """
         super().__init__(epi_model, data)
         # self.data_disp_range = [jnp.log(1.0), jnp.log(1.5)]
-        self.data_disp_sd = 0.1
-        self.proc_disp_sd = 0.1
+        self.data_disp_sd = data_dispersion_sd
+        self.proc_disp_sd = process_dispersion_sd
+        self.priors = priors
+
+        # +++
+        # This is a bit of a hack to force transformed distributions to do any
+        # of their compilation antics before we call into anything else; otherwise we
+        # trigger jax/numpyro memory leak bugs (not our fault!)
+        _ = [p.mean for p in priors.values()]
 
     def get_model_notifications(self, gen_mean, gen_sd, proc, seed, cdr):
         """Get the modelled notifications from a set of epi parameters.
@@ -78,25 +88,23 @@ class StandardCalib(Calibration):
             * cdr
         )
 
-    def calibration(
-        self,
-        params: Dict[str, float],
-    ):
+    def calibration(self):
         """See get_description below.
 
         Args:
             params: Parameters with single value
         """
+        params = self.priors
+
         param_updates = {k: numpyro.sample(k, v) for k, v in params.items()}
+        param_updates["seed"] = self.data[0] / param_updates["cdr"]
         proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_sd))
         n_process_periods = self.n_process_periods
         proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)
         param_updates["proc"] = numpyro.sample("proc", proc_dist)
-        log_model_res = jnp.log(jit(self.get_model_notifications)(**param_updates))
+        log_model_res = jnp.log(self.get_model_notifications(**param_updates))
         log_target = jnp.log(self.data)
-        dispersion = numpyro.sample(
-            "dispersion", dist.HalfNormal(self.data_disp_sd)
-        )  # dist.Uniform(*self.data_disp_range))
+        dispersion = numpyro.sample("dispersion", dist.HalfNormal(self.data_disp_sd))
         like = dist.Normal(log_model_res, dispersion).log_prob(log_target).sum()
         numpyro.factor("notifications_ll", like)
 
