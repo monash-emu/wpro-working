@@ -27,6 +27,7 @@ estival = "==0.5.1"
 kaleido = {version = "==0.2.1", optional = true}
 summerepi2 = ">=1.3.0"
 numpyro = ">=0.13.0"
+jax = "<=0.4.24"
 
 [tool.poetry.extras]
 full = ["kaleido"]
