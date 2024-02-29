@@ -1,4 +1,4 @@
-from typing import Union, Optional, List
+from typing import Union, List
 from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
@@ -73,7 +73,8 @@ class RenewalModel:
         )
 
         # Process
-        self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
+        self.proc_update_freq = proc_update_freq
+        self.x_proc_vals = jnp.arange(self.end, self.start, -self.proc_update_freq)[::-1]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.proc_fitter = proc_fitter
         self.process_start = int(self.x_proc_vals[0])
@@ -81,7 +82,7 @@ class RenewalModel:
         self.description["Variable process"] = (
             "Each x-values for the requested points in the variable process "
             "are set at evenly spaced intervals through the analysis period "
-            f"spaced by {proc_update_freq} days and "
+            f"spaced by {self.proc_update_freq} days and "
             "ending at the analysis end time. "
         )
         if self.start < self.process_start:

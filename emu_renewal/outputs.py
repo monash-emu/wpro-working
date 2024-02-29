@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 
 from estival.sampling.tools import SampleIterator
 
-from .renew import RenewalModel
+from emu_renewal.renew import RenewalModel
 
 PANEL_SUBTITLES = ["cases", "susceptibles", "R", "transmission potential"]
 MARGINS = {m: 20 for m in ["t", "b", "l", "r"]}
