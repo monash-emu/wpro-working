@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 from plotly import graph_objects as go
 from plotly.subplots import make_subplots
+import arviz as az
+from numpyro import distributions as dist
+from matplotlib import pyplot as plt
 
 from estival.sampling.tools import SampleIterator
 
@@ -189,3 +192,28 @@ def plot_3d_spaghetti(
         fig.add_trace(trace)
     axis_titles = {"xaxis": {"title": "time"}, "yaxis": {"title": col_1}, "zaxis": {"title": col_2}}
     return fig.update_layout(showlegend=False, scene=axis_titles, height=800)
+
+
+def plot_post_prior_comparison(
+    idata: az.InferenceData, 
+    req_vars: List[str], 
+    priors: List[dist.Distribution],
+) -> plt.figure:
+    """Plot comparison of model posterior outputs against priors.
+
+    Args:
+        idata: Arviz inference data from calibration
+        req_vars: User-requested variables to plot
+        priors: Numpyro prior objects
+
+    Returns:
+        The figure object
+    """
+    plot = az.plot_density(idata, var_names=req_vars, shade=0.3, grid=[1, len(req_vars)])
+    for i_ax, ax in enumerate(plot.ravel()):
+        ax_limits = ax.get_xlim()
+        x_vals = np.linspace(*ax_limits, 50)
+        y_vals = np.exp(priors[req_vars[i_ax]].log_prob(x_vals))
+        y_vals *= ax.get_ylim()[1] / max(y_vals)
+        ax.fill_between(x_vals, y_vals, color="k", alpha=0.2, linewidth=2)
+    return plot
