@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 from estival.sampling.tools import SampleIterator
 
 from emu_renewal.renew import RenewalModel
+from emu_renewal.utils import map_dict
 
 PANEL_SUBTITLES = ["cases", "susceptibles", "R", "transmission potential"]
 MARGINS = {m: 20 for m in ["t", "b", "l", "r"]}
@@ -217,3 +218,24 @@ def plot_post_prior_comparison(
         y_vals *= ax.get_ylim()[1] / max(y_vals)
         ax.fill_between(x_vals, y_vals, color="k", alpha=0.2, linewidth=2)
     return plot
+
+
+def plot_priors(
+    priors: List[dist.Distribution],
+) -> go.Figure:
+    """Plot prior distributions with plotly.
+
+    Args:
+        priors: The priors
+
+    Returns:
+        The figure object
+    """
+    fig = make_subplots(1, len(priors), subplot_titles=[map_dict[i] for i in priors.keys()])
+    for i, p in enumerate(priors):
+        prior = priors[p]
+        limit = 0.01 if isinstance(prior, dist.Uniform) else 0.0
+        x_vals = np.linspace(prior.icdf(limit), prior.icdf(1.0 - limit), 50)
+        y_vals = np.exp(prior.log_prob(x_vals))
+        fig.add_trace(go.Scatter(x=x_vals, y=y_vals, name=map_dict[p], fill="tozeroy"), row=1, col=i + 1)
+    return fig.update_layout(showlegend=False)
