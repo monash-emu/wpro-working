@@ -47,6 +47,7 @@ class StandardCalib(Calibration):
         epi_model: RenewalModel,
         data: pd.Series,
         priors: dict[str, dist.Distribution],
+        init_data: pd.Series,
         data_dispersion_sd=1.0,
         process_dispersion_sd=1.0,
     ):
@@ -61,6 +62,7 @@ class StandardCalib(Calibration):
         self.data_disp_sd = data_dispersion_sd
         self.proc_disp_sd = process_dispersion_sd
         self.priors = priors
+        self.init_data = init_data
 
         # +++
         # This is a bit of a hack to force transformed distributions to do any
@@ -68,7 +70,7 @@ class StandardCalib(Calibration):
         # trigger jax/numpyro memory leak bugs (not our fault!)
         _ = [p.mean for p in priors.values()]
 
-    def get_model_notifications(self, gen_mean, gen_sd, proc, seed, cdr):
+    def get_model_notifications(self, gen_mean, gen_sd, proc, init_window, cdr, rt0):
         """Get the modelled notifications from a set of epi parameters.
 
         Args:
@@ -82,7 +84,7 @@ class StandardCalib(Calibration):
             Case notification rate
         """
         return (
-            self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[
+            self.epi_model.renewal_func(gen_mean, gen_sd, proc, init_window, rt0).incidence[
                 self.common_model_idx
             ]
             * cdr
@@ -97,7 +99,8 @@ class StandardCalib(Calibration):
         params = self.priors
 
         param_updates = {k: numpyro.sample(k, v) for k, v in params.items()}
-        param_updates["seed"] = self.data[0] / param_updates["cdr"]
+        # param_updates["seed"] = self.data[0] / param_updates["cdr"]
+        param_updates["init_window"] = self.init_data / param_updates["cdr"]
         proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_sd))
         n_process_periods = self.n_process_periods
         proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)

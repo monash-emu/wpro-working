@@ -166,10 +166,7 @@ class RenewalModel:
         )
         self.description["Seeding"] += self.seed_fitter.get_description()
 
-    def fit_process_curve(
-        self,
-        y_proc_req: List[float],
-    ) -> jnp.array:
+    def fit_process_curve(self, y_proc_req: List[float], rt0: float) -> jnp.array:
         """See describe_process below.
 
         Args:
@@ -178,7 +175,7 @@ class RenewalModel:
         Returns:
             The values of the variable process at each model time
         """
-        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
+        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((rt0,)), y_proc_req]))
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
         cos_func = vmap(self.proc_fitter.get_multicurve, in_axes=(0, None, None))
         return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_data))
@@ -197,7 +194,8 @@ class RenewalModel:
         gen_mean: float,
         gen_sd: float,
         y_proc_req: List[float],
-        log_seed_peak: float,
+        init_window: float,
+        rt0: float,
     ) -> ModelResult:
         """See describe_renewal
 
@@ -211,19 +209,17 @@ class RenewalModel:
             Results of the model run
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
-        process_vals = self.fit_process_curve(y_proc_req)
-        # init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
-        init_state = RenewalState(jnp.ones(self.window_len) * log_seed_peak, self.pop)
+        process_vals = self.fit_process_curve(y_proc_req, rt0)
+        init_state = RenewalState(init_window, self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(
-                t < self.process_start, 1.0, process_vals[t - self.simulation_start]
-            )
+            # proc_val = jnp.where(
+            #    t < self.process_start, 1.0, process_vals[t - self.simulation_start]
+            # )
+            proc_val = process_vals[t - self.simulation_start]
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
-            # seed_component = self.seed_func(t, log_seed_peak)
-            total_new_inc = renewal  # + seed_component
-            total_new_inc = jnp.where(total_new_inc > state.suscept, state.suscept, total_new_inc)
+            total_new_inc = jnp.where(renewal > state.suscept, state.suscept, renewal)
             suscept = state.suscept - total_new_inc
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
