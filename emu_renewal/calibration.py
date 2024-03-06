@@ -60,7 +60,7 @@ class StandardCalib(Calibration):
         self.proc_disp_sd = 0.1
         self.init_series = jnp.array(init_series)
 
-    def get_model_notifications(self, gen_mean, gen_sd, proc, cdr):
+    def get_model_notifications(self, gen_mean, gen_sd, proc, cdr, rt_init):
         """Get the modelled notifications from a set of epi parameters.
 
         Args:
@@ -70,9 +70,9 @@ class StandardCalib(Calibration):
             cdr: Case detection rate/proportion
 
         Returns:
-            Case notification rate
+            Case detection proportion
         """
-        result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr)
+        result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr, rt_init)
         return result.incidence[self.common_model_idx] * cdr
 
     def calibration(

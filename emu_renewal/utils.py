@@ -63,9 +63,9 @@ map_dict = {
     "cdr": "Case detection proportion",
     "gen_mean": "Generation time, mean",
     "gen_sd": "Generation time, standard deviation",
-    "seed": "Log peak seeding rate",
     "proc_dispersion": "Variable process update dispersion",
     "dispersion": "Data comparison dispersion",
+    "rt_init": "Rt starting value",
 }
 
 

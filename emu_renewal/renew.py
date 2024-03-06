@@ -130,6 +130,7 @@ class RenewalModel:
     def fit_process_curve(
         self, 
         y_proc_req: List[float],
+        rt_init,
     ) -> jnp.array:
         """See describe_process below.
 
@@ -139,7 +140,7 @@ class RenewalModel:
         Returns:
             The values of the variable process at each model time
         """
-        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((0,)), y_proc_req]))
+        y_proc_vals = jnp.cumsum(jnp.concatenate([jnp.array((rt_init,)), y_proc_req]))
         y_proc_data = sinterp.get_scale_data(y_proc_vals)
         cos_func = vmap(self.proc_fitter.get_multicurve, in_axes=(0, None, None))
         return jnp.exp(cos_func(self.model_times, self.x_proc_data, y_proc_data))
@@ -159,6 +160,7 @@ class RenewalModel:
         gen_sd: float, 
         y_proc_req: List[float],
         cdr,
+        rt_init,
     ) -> ModelResult:
         """See describe_renewal
 
@@ -171,7 +173,7 @@ class RenewalModel:
             Results of the model run
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
-        process_vals = self.fit_process_curve(y_proc_req)
+        process_vals = self.fit_process_curve(y_proc_req, rt_init)
         init_inc = self.init_series / cdr
         init_state = RenewalState(init_inc, self.pop)
 
