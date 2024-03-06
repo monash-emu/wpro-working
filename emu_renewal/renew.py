@@ -3,6 +3,8 @@ from typing import NamedTuple
 from jax import lax, vmap
 from jax import numpy as jnp
 from datetime import datetime
+import pandas as pd
+import numpy as np
 
 from summer2.utils import Epoch
 
@@ -33,7 +35,7 @@ class RenewalModel:
         proc_fitter: MultiCurve,
         dens_obj: Dens, 
         window_len: int, 
-        init_series,
+        init_series: Union[pd.Series, np.array],
     ):
         """Standard renewal model object.
 
@@ -45,9 +47,10 @@ class RenewalModel:
             proc_fitter: The object containing the method for fitting to the variable process series
             dens_obj: Generation time distribution
             window_len: How far to look back in calculating the renewal process
-            epoch: Reference epoch for calculating dates. Defaults to None.
+            init_series: Initialisation series prior to analysis start
         """
 
+        # Initialising series
         self.init_series = jnp.array(init_series)
 
         # Times
