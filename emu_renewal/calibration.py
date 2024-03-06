@@ -16,14 +16,12 @@ class Calibration:
         epi_model: RenewalModel,
         priors: dict[str, dist.Distribution],
         data: pd.Series,
-        init_series: pd.Series,
     ):
         """Set up calibration object with epi model and data.
 
         Args:
             epi_model: The renewal model
             data: The data targets
-            init_series: The targets from before the analysis starts
         """
         self.epi_model = epi_model
         self.n_process_periods = len(self.epi_model.x_proc_data.points)
@@ -35,7 +33,6 @@ class Calibration:
             np.array(self.epi_model.epoch.dti_to_index(common_dates_idx).astype(int))
             - self.epi_model.model_times[0]
         )
-        self.init_series = jnp.array(init_series)
 
         # Force transformed distributions to compile first and avoid jax/numpyro memory leaks
         _ = [p.mean for p in priors.values()]
@@ -53,16 +50,14 @@ class StandardCalib(Calibration):
         epi_model: RenewalModel,
         priors: dict[str, dist.Distribution],
         data: pd.Series,
-        init_series: pd.Series,
     ):
         """Set up calibration object with epi model and data.
 
         Args:
             epi_model: The renewal model
             data: The data targets
-            init_series: 
         """
-        super().__init__(epi_model, priors, data, init_series)
+        super().__init__(epi_model, priors, data)
         self.data_disp_sd = 0.1
         self.proc_disp_sd = 0.1
 
