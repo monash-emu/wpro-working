@@ -179,12 +179,12 @@ class RenewalModel:
             proc_val = process_vals[t - self.start]
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
-            total_new_inc = jnp.where(renewal > state.suscept, state.suscept, renewal)
-            suscept = state.suscept - total_new_inc
+            new_inc = jnp.where(renewal > state.suscept, state.suscept, renewal)
+            suscept = state.suscept - new_inc
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
-            incidence = incidence.at[0].set(total_new_inc)
-            out = {"incidence": total_new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val}
+            incidence = incidence.at[0].set(new_inc)
+            out = {"incidence": new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val}
             return RenewalState(incidence, suscept), out
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
