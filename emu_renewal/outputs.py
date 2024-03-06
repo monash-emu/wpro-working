@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import numpy as np
 import pandas as pd
 from plotly import graph_objects as go
@@ -234,7 +234,7 @@ def plot_priors(
     fig = make_subplots(1, len(priors), subplot_titles=[map_dict[i] for i in priors.keys()])
     for i, p in enumerate(priors):
         prior = priors[p]
-        limit = 0.01 if isinstance(prior, dist.Uniform) else 0.0
+        limit = 0.01 if isinstance(prior, Union[dist.Uniform, dist.Gamma]) else 0.0
         x_vals = np.linspace(prior.icdf(limit), prior.icdf(1.0 - limit), 50)
         y_vals = np.exp(prior.log_prob(x_vals))
         fig.add_trace(go.Scatter(x=x_vals, y=y_vals, name=map_dict[p], fill="tozeroy"), row=1, col=i + 1)
