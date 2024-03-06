@@ -175,7 +175,8 @@ class RenewalModel:
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req, rt_init)
         init_inc = self.init_series / cdr
-        init_state = RenewalState(init_inc, self.pop)
+        start_pop = self.pop - jnp.sum(init_inc)
+        init_state = RenewalState(init_inc, start_pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             proc_val = process_vals[t - self.start]
