@@ -26,7 +26,7 @@ class Calibration:
         self.epi_model = epi_model
         self.n_process_periods = len(self.epi_model.x_proc_data.points)
 
-        analysis_dates_idx = self.epi_model.epoch.index_to_dti(self.epi_model.analysis_times)
+        analysis_dates_idx = self.epi_model.epoch.index_to_dti(self.epi_model.model_times)
         common_dates_idx = data.index.intersection(analysis_dates_idx)
         self.data = jnp.array(data.loc[common_dates_idx])
         self.common_model_idx = (
@@ -46,36 +46,34 @@ class StandardCalib(Calibration):
         self,
         epi_model: RenewalModel,
         data: pd.Series,
+        init_series: pd.Series,
     ):
         """Set up calibration object with epi model and data.
 
         Args:
             epi_model: The renewal model
             data: The data targets
+            init_series: 
         """
         super().__init__(epi_model, data)
         self.data_disp_sd = 0.1
         self.proc_disp_sd = 0.1
+        self.init_series = jnp.array(init_series)
 
-    def get_model_notifications(self, gen_mean, gen_sd, proc, seed, cdr):
+    def get_model_notifications(self, gen_mean, gen_sd, proc, cdr):
         """Get the modelled notifications from a set of epi parameters.
 
         Args:
             gen_mean: Generation time mean
             gen_sd: Generation time standard deviation
             proc: Values of the variable process
-            seed: Log-transformed peak seeding value
             cdr: Case detection rate/proportion
 
         Returns:
             Case notification rate
         """
-        return (
-            self.epi_model.renewal_func(gen_mean, gen_sd, proc, seed).incidence[
-                self.common_model_idx
-            ]
-            * cdr
-        )
+        result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr)
+        return result.incidence[self.common_model_idx] * cdr
 
     def calibration(
         self,
@@ -88,10 +86,9 @@ class StandardCalib(Calibration):
         """
         param_updates = {k: numpyro.sample(k, v) for k, v in params.items()}
         proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_sd))
-        n_process_periods = self.n_process_periods
-        proc_dist = dist.Normal(jnp.repeat(0.0, n_process_periods), proc_dispersion)
+        proc_dist = dist.Normal(jnp.repeat(0.0, self.n_process_periods), proc_dispersion)
         param_updates["proc"] = numpyro.sample("proc", proc_dist)
-        log_model_res = jnp.log(jit(self.get_model_notifications)(**param_updates))
+        log_model_res = jnp.log(self.get_model_notifications(**param_updates))
         log_target = jnp.log(self.data)
         dispersion = numpyro.sample("dispersion", dist.HalfNormal(self.data_disp_sd))
         like = dist.Normal(log_model_res, dispersion).log_prob(log_target).sum()

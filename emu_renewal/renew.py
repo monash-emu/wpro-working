@@ -29,12 +29,11 @@ class RenewalModel:
         population: float, 
         start: Union[datetime, int], 
         end: Union[datetime, int], 
-        run_in: int, 
         proc_update_freq: int, 
         proc_fitter: MultiCurve,
         dens_obj: Dens, 
-        seed_fitter: MultiCurve,
         window_len: int, 
+        init_series,
     ):
         """Standard renewal model object.
 
@@ -42,7 +41,6 @@ class RenewalModel:
             population: Starting population value
             start: Start time for the analysis period (excluding run-in)
             end: End time for the analysis period
-            run_in_req: Duration of additional period preceding the analysis period
             proc_update_freq: Frequency with with the vairable process is updated
             proc_fitter: The object containing the method for fitting to the variable process series
             dens_obj: Generation time distribution
@@ -50,19 +48,18 @@ class RenewalModel:
             epoch: Reference epoch for calculating dates. Defaults to None.
         """
 
+        self.init_series = jnp.array(init_series)
+
         # Times
         self.epoch = Epoch(start) if isinstance(start, datetime) else None
         self.start = self.process_time_req(start)
         self.end = self.process_time_req(end)
-        self.run_in = run_in
-        self.simulation_start = self.start - self.run_in
-        self.analysis_times = jnp.arange(self.start, self.end + 1)
-        self.model_times = jnp.arange(self.simulation_start, self.end + 1)
+        self.model_times = jnp.arange(self.start, self.end + 1)
         self.description = {
             "Fixed parameters": (
                 f"The main analysis period runs from {format_date_for_str(start)} "
                 f"to {format_date_for_str(end)}, "
-                f"with a preceding run in period of {self.run_in} days. "
+                "with a preceding run in period of {self.run_in} days. "
             )
         }
 
@@ -78,7 +75,6 @@ class RenewalModel:
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.proc_fitter = proc_fitter
         self.process_start = int(self.x_proc_vals[0])
-        self.constant_process_time = self.process_start - self.simulation_start
         self.description["Variable process"] = (
             "Each x-values for the requested points in the variable process "
             "are set at evenly spaced intervals through the analysis period "
@@ -89,7 +85,7 @@ class RenewalModel:
             self.description["Variable process"] = (
                 "Because the analysis period is not an exact multiple "
                 "of the duration of a process interval, "
-                f"the run-in period is extended from {self.run_in} days "
+                "the run-in period is extended from {self.run_in} days "
                 f"to {self.process_start} days. "
             )
         self.describe_process()
@@ -104,13 +100,6 @@ class RenewalModel:
             "on the assumption that the distribution's density "
             "has reached negligible values once this period has elapsed. "
         )
-
-        # Seeding
-        self.seed_x_vals = jnp.linspace(self.simulation_start, self.start, 3)
-        self.seed_fitter = seed_fitter
-        self.start_seed = 0.0
-        self.end_seed = 0.0
-        self.describe_seed_func()
 
         # Renewal process
         self.describe_renewal()
@@ -137,33 +126,6 @@ class RenewalModel:
             return int(self.epoch.dti_to_index(req))
         else:
             raise ValueError(msg)
-
-    def seed_func(
-        self, 
-        t: float, 
-        log_seed_peak: float,
-    ) -> float:
-        """See describe_seed_func
-
-        Args:
-            t: Model time
-            seed_peak: Peak seeding rate 
-
-        Returns:
-            Seeding rate at the requested time
-        """
-        x_vals = sinterp.get_scale_data(jnp.array(self.seed_x_vals))
-        y_vals = sinterp.get_scale_data(jnp.array([self.start_seed, jnp.exp(log_seed_peak), self.end_seed]))
-        return self.seed_fitter.get_multicurve(t, x_vals, y_vals)
-    
-    def describe_seed_func(self):
-        self.description["Seeding"] = (
-            f"The seeding function scales up from a value of {self.start_seed} "
-            "at the start of the run-in period to it's peak value "
-            "through the first half of the run-in, "
-            f"and then decays back to {self.end_seed} at the end of the run-in. "
-        )
-        self.description["Seeding"] += self.seed_fitter.get_description()
 
     def fit_process_curve(
         self, 
@@ -195,8 +157,8 @@ class RenewalModel:
         self, 
         gen_mean: float, 
         gen_sd: float, 
-        y_proc_req: List[float], 
-        log_seed_peak: float,
+        y_proc_req: List[float],
+        cdr,
     ) -> ModelResult:
         """See describe_renewal
 
@@ -204,22 +166,20 @@ class RenewalModel:
             gen_mean: Generation time mean
             gen_sd: Generation time standard deviation
             y_proc_req: Values of the variable process
-            log_seed_peak: Log-transformed peak seeding value
 
         Returns:
             Results of the model run
         """
         densities = self.dens_obj.get_densities(self.window_len, gen_mean, gen_sd)
         process_vals = self.fit_process_curve(y_proc_req)
-        init_state = RenewalState(jnp.zeros(self.window_len), self.pop)
+        init_inc = self.init_series / cdr
+        init_state = RenewalState(init_inc, self.pop)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
-            proc_val = jnp.where(t < self.process_start, 1.0, process_vals[t - self.simulation_start])
+            proc_val = process_vals[t - self.start]
             r_t = proc_val * state.suscept / self.pop
             renewal = (densities * state.incidence).sum() * r_t
-            seed_component = self.seed_func(t, log_seed_peak)
-            total_new_inc = renewal + seed_component
-            total_new_inc = jnp.where(total_new_inc > state.suscept, state.suscept, total_new_inc)
+            total_new_inc = jnp.where(renewal > state.suscept, state.suscept, renewal)
             suscept = state.suscept - total_new_inc
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
