@@ -5,6 +5,7 @@ from jax import numpy as jnp
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from warnings import warn
 
 from summer2.utils import Epoch
 
@@ -51,7 +52,14 @@ class RenewalModel:
         """
 
         # Initialising series
-        self.init_series = jnp.array(init_series)
+        if len(init_series) < window_len:
+            warn("Padding initialisation series with zeroes because shorter than window")
+            self.init_series = np.concatenate([np.zeros(window_len - len(init_series)), init_series])
+        elif len(init_series) > window_len:
+            warn("Trimming initialisation series because longer than window")
+            self.init_series = jnp.array(init_series[-window_len:])
+        else:
+            self.init_series = jnp.array(init_series)
 
         # Times
         self.epoch = Epoch(start) if isinstance(start, datetime) else None
