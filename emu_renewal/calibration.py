@@ -48,8 +48,10 @@ class StandardCalib(Calibration):
         data: pd.Series,
         priors: dict[str, dist.Distribution],
         init_data: pd.Series,
+        fixed_params: dict,
         data_dispersion_sd=1.0,
         process_dispersion_sd=1.0,
+        smoothing=False,
     ):
         """Set up calibration object with epi model and data.
 
@@ -63,12 +65,14 @@ class StandardCalib(Calibration):
         self.proc_disp_sd = process_dispersion_sd
         self.priors = priors
         self.init_data = init_data
+        self.fixed_params = fixed_params
+        self.smoothing = smoothing
 
         # +++
         # This is a bit of a hack to force transformed distributions to do any
         # of their compilation antics before we call into anything else; otherwise we
         # trigger jax/numpyro memory leak bugs (not our fault!)
-        _ = [p.mean for p in priors.values()]
+        # _ = [p.mean for p in priors.values()]
 
     def get_model_notifications(self, gen_mean, gen_sd, proc, init_window, cdr, rt0):
         """Get the modelled notifications from a set of epi parameters.
@@ -83,12 +87,20 @@ class StandardCalib(Calibration):
         Returns:
             Case notification rate
         """
-        return (
-            self.epi_model.renewal_func(gen_mean, gen_sd, proc, init_window, rt0).incidence[
-                self.common_model_idx
-            ]
-            * cdr
-        )
+        if self.smoothing:
+            return (
+                self.epi_model.renewal_func(gen_mean, gen_sd, proc, init_window, rt0).incidence_ma7[
+                    self.common_model_idx
+                ]
+                * cdr
+            )
+        else:
+            return (
+                self.epi_model.renewal_func(gen_mean, gen_sd, proc, init_window, rt0).incidence[
+                    self.common_model_idx
+                ]
+                * cdr
+            )
 
     def calibration(self):
         """See get_description below.
@@ -96,9 +108,12 @@ class StandardCalib(Calibration):
         Args:
             params: Parameters with single value
         """
-        params = self.priors
+        params = {}
+        for k, (distname, args, kwargs) in self.priors.items():
+            params[k] = getattr(dist, distname)(*args, **kwargs)
 
-        param_updates = {k: numpyro.sample(k, v) for k, v in params.items()}
+        param_updates = self.fixed_params
+        param_updates = param_updates | {k: numpyro.sample(k, v) for k, v in params.items()}
         # param_updates["seed"] = self.data[0] / param_updates["cdr"]
         param_updates["init_window"] = self.init_data / param_updates["cdr"]
         proc_dispersion = numpyro.sample("proc_dispersion", dist.HalfNormal(self.proc_disp_sd))

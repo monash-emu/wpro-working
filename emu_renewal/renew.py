@@ -1,10 +1,11 @@
 from typing import Union, Optional, List
 from typing import NamedTuple
 from jax import lax, vmap
-from jax import numpy as jnp
+from jax import numpy as jnp, Array
 from datetime import datetime
 
 from summer2.utils import Epoch
+from summer2.functions.derived import get_rolling_reduction
 
 from emu_renewal.process import sinterp, MultiCurve
 from emu_renewal.distributions import Dens
@@ -12,15 +13,16 @@ from emu_renewal.utils import format_date_for_str, round_sigfig
 
 
 class RenewalState(NamedTuple):
-    incidence: jnp.array
+    incidence: Array
     suscept: float
 
 
 class ModelResult(NamedTuple):
-    incidence: jnp.array
-    suscept: jnp.array
-    r_t: jnp.array
-    process: jnp.array
+    incidence: Array
+    incidence_ma7: Array
+    suscept: Array
+    r_t: Array
+    process: Array
 
 
 class RenewalModel:
@@ -73,7 +75,9 @@ class RenewalModel:
         ] += f"The starting model population is {round_sigfig(population / 1e6, 2)} million persons. "
 
         # Process
-        self.x_proc_vals = jnp.arange(self.end, self.start, -proc_update_freq)[::-1]
+        self.x_proc_vals = jnp.arange(self.end, self.start - proc_update_freq, -proc_update_freq)[
+            ::-1
+        ]
         self.x_proc_data = sinterp.get_scale_data(self.x_proc_vals)
         self.proc_fitter = proc_fitter
         self.process_start = int(self.x_proc_vals[0])
@@ -212,6 +216,8 @@ class RenewalModel:
         process_vals = self.fit_process_curve(y_proc_req, rt0)
         init_state = RenewalState(init_window, self.pop)
 
+        rmean7 = get_rolling_reduction(jnp.mean, 7)
+
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             # proc_val = jnp.where(
             #    t < self.process_start, 1.0, process_vals[t - self.simulation_start]
@@ -228,6 +234,7 @@ class RenewalModel:
             return RenewalState(incidence, suscept), out
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
+        outputs["incidence_ma7"] = rmean7(outputs["incidence"])
         return ModelResult(**outputs)
 
     def describe_renewal(self):
