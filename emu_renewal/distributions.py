@@ -18,7 +18,7 @@ class Dens:
         """
         pass
 
-    def get_densitites():
+    def get_densities():
         """The densities for each integer increment in the distribution.
         """
         pass

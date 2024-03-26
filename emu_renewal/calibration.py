@@ -74,7 +74,7 @@ class StandardCalib(Calibration):
             Case detection proportion
         """
         result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr, rt_init)
-        return result.incidence[self.common_model_idx] * cdr
+        return result.cases[self.common_model_idx]
 
     def calibration(
         self,

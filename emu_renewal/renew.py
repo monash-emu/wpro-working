@@ -10,7 +10,7 @@ from warnings import warn
 from summer2.utils import Epoch
 
 from emu_renewal.process import sinterp, MultiCurve
-from emu_renewal.distributions import Dens
+from emu_renewal.distributions import Dens, GammaDens
 from emu_renewal.utils import format_date_for_str, round_sigfig
 
 
@@ -24,6 +24,7 @@ class ModelResult(NamedTuple):
     suscept: jnp.array
     r_t: jnp.array
     process: jnp.array
+    cases: jnp.array
 
 
 class RenewalModel:
@@ -189,6 +190,9 @@ class RenewalModel:
         start_pop = self.pop - jnp.sum(init_inc)
         init_state = RenewalState(init_inc, start_pop)
 
+        report_dist = GammaDens()
+        report_dist_params = [10.0, 5.0]
+
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             proc_val = process_vals[t - self.start]
             r_t = proc_val * state.suscept / self.pop
@@ -198,7 +202,12 @@ class RenewalModel:
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
             incidence = incidence.at[0].set(new_inc)
-            out = {"incidence": new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val}
+
+            # Could split this out as a separate function
+            report_densities = report_dist.get_densities(len(incidence), *report_dist_params)
+            cases = (incidence * report_densities[::-1]).sum() * cdr
+
+            out = {"incidence": new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val, "cases": cases}
             return RenewalState(incidence, suscept), out
 
         end_state, outputs = lax.scan(state_update, init_state, self.model_times)
