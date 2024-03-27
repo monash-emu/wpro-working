@@ -14,13 +14,6 @@ from emu_renewal.distributions import Dens, GammaDens
 from emu_renewal.utils import format_date_for_str, round_sigfig
 
 
-def get_delay_report(distribution, dist_params, cdr):
-    def delay_report_func(latent_state):
-        densities = distribution.get_densities(len(latent_state), *dist_params)
-        return (latent_state * densities).sum() * cdr
-    return delay_report_func
-
-
 class RenewalState(NamedTuple):
     incidence: jnp.array
     suscept: float
@@ -45,6 +38,7 @@ class RenewalModel:
         dens_obj: Dens, 
         window_len: int, 
         init_series: Union[pd.Series, np.array],
+        reporting_dist: Dens,
     ):
         """Standard renewal model object.
 
@@ -123,6 +117,9 @@ class RenewalModel:
         # Renewal process
         self.describe_renewal()
 
+        # Reporting delay
+        self.report_dist = reporting_dist
+
     def process_time_req(
         self, 
         req: Union[datetime, int],
@@ -173,6 +170,12 @@ class RenewalModel:
             "undertaken in the log-transformed space. "
         )
 
+    def get_delay_report(self, distribution, report_mean, report_sd, cdr):
+        def delay_report_func(latent_state):
+            densities = distribution.get_densities(len(latent_state), report_mean, report_sd)
+            return (latent_state * densities).sum() * cdr
+        return delay_report_func
+
     def renewal_func(
         self, 
         gen_mean: float, 
@@ -180,6 +183,8 @@ class RenewalModel:
         y_proc_req: List[float],
         cdr,
         rt_init,
+        report_mean: float,
+        report_sd: float,
     ) -> ModelResult:
         """See describe_renewal
 
@@ -196,9 +201,7 @@ class RenewalModel:
         init_inc = self.init_series / cdr
         start_pop = self.pop - jnp.sum(init_inc)
         init_state = RenewalState(init_inc, start_pop)
-
-        # Will make these choices arguments to the renewal model object
-        delay_report = get_delay_report(GammaDens(), [10.0, 5.0], cdr)
+        delay_report = self.get_delay_report(self.report_dist, report_mean, report_sd, cdr)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             proc_val = process_vals[t - self.start]

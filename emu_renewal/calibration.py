@@ -61,7 +61,7 @@ class StandardCalib(Calibration):
         self.data_disp_sd = 0.1
         self.proc_disp_sd = 0.1
 
-    def get_model_notifications(self, gen_mean, gen_sd, proc, cdr, rt_init):
+    def get_model_notifications(self, gen_mean, gen_sd, proc, cdr, rt_init, report_mean, report_sd):
         """Get the modelled notifications from a set of epi parameters.
 
         Args:
@@ -69,11 +69,13 @@ class StandardCalib(Calibration):
             gen_sd: Generation time standard deviation
             proc: Values of the variable process
             cdr: Case detection rate/proportion
+            report_mean: Time to reporting mean
+            report_sd: Time to reporting standard deviation
 
         Returns:
             Case detection proportion
         """
-        result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr, rt_init)
+        result = self.epi_model.renewal_func(gen_mean, gen_sd, proc, cdr, rt_init, report_mean, report_sd)
         return result.cases[self.common_model_idx]
 
     def calibration(
