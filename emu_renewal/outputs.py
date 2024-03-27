@@ -38,7 +38,7 @@ def get_spaghetti_from_params(
     spaghetti = pd.DataFrame(index=index_names, columns=column_names)
     for i, p in params.iterrows():
         res = model_func(**{k: v for k, v in p.items() if "dispersion" not in k})
-        spaghetti.loc[:, str(i)] = np.array([res.incidence * p["cdr"], res.suscept, res.r_t, res.process]).T
+        spaghetti.loc[:, str(i)] = np.array([res.cases, res.suscept, res.r_t, res.process]).T
     spaghetti.columns = spaghetti.columns.swaplevel()
     return spaghetti.sort_index(axis=1, level=0)
 

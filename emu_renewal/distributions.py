@@ -1,6 +1,4 @@
 from typing import Dict
-import numpy as np
-from scipy.stats import gamma
 from jax.scipy.stats import gamma as jaxgamma
 from jax import numpy as jnp
 
