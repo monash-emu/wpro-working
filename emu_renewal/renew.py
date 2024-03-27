@@ -16,8 +16,8 @@ from emu_renewal.utils import format_date_for_str, round_sigfig
 
 def get_delay_report(distribution, dist_params, cdr):
     def delay_report_func(latent_state):
-        report_densities = distribution.get_densities(len(latent_state), *dist_params)
-        return (latent_state * report_densities[::-1]).sum() * cdr
+        densities = distribution.get_densities(len(latent_state), *dist_params)
+        return (latent_state * densities).sum() * cdr
     return delay_report_func
 
 
