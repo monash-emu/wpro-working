@@ -14,6 +14,13 @@ from emu_renewal.distributions import Dens, GammaDens
 from emu_renewal.utils import format_date_for_str, round_sigfig
 
 
+def get_delay_report(distribution, dist_params, cdr):
+    def delay_report_func(latent_state):
+        report_densities = distribution.get_densities(len(latent_state), *dist_params)
+        return (latent_state * report_densities[::-1]).sum() * cdr
+    return delay_report_func
+
+
 class RenewalState(NamedTuple):
     incidence: jnp.array
     suscept: float
@@ -190,8 +197,8 @@ class RenewalModel:
         start_pop = self.pop - jnp.sum(init_inc)
         init_state = RenewalState(init_inc, start_pop)
 
-        report_dist = GammaDens()
-        report_dist_params = [10.0, 5.0]
+        # Will make these choices arguments to the renewal model object
+        delay_report = get_delay_report(GammaDens(), [10.0, 5.0], cdr)
 
         def state_update(state: RenewalState, t) -> tuple[RenewalState, jnp.array]:
             proc_val = process_vals[t - self.start]
@@ -202,11 +209,7 @@ class RenewalModel:
             incidence = jnp.zeros_like(state.incidence)
             incidence = incidence.at[1:].set(state.incidence[:-1])
             incidence = incidence.at[0].set(new_inc)
-
-            # Could split this out as a separate function
-            report_densities = report_dist.get_densities(len(incidence), *report_dist_params)
-            cases = (incidence * report_densities[::-1]).sum() * cdr
-
+            cases = delay_report(incidence)
             out = {"incidence": new_inc, "suscept": suscept, "r_t": r_t, "process": proc_val, "cases": cases}
             return RenewalState(incidence, suscept), out
 
