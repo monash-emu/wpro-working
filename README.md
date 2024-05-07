@@ -9,6 +9,8 @@ To run these over Google Colab, follow the links below and the instructions in t
 
 [Child susceptibility](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/02-child-suscept.ipynb)
 
+[Calibration](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/02_basic_calibration.ipynb)
+
 [Heterogeneous mixing](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/03-hetero-mix.ipynb)
 
 [Serial latent compartments](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/04-serial-latent-comps.ipynb)
