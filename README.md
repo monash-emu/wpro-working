@@ -19,6 +19,8 @@ To run these over Google Colab, follow the links below and the instructions in t
 
 [Multiple strains](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/06-multi-strain.ipynb)
 
+[Renewal introduction](https://colab.research.google.com/github/monash-emu/wpro-working/blob/main/recap/07-renewal.ipynb)
+
 ## Local installation
 To interact with the code from this repository on your local computer, you would need to undertake the following steps:
 - Set up a [conda environment](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html)
