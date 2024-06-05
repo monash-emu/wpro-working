@@ -29,6 +29,7 @@ To interact with the code from this repository on your local computer, you would
 - [Install jupyter](https://jupyter.org/install), or use an IDE with integrated notebook support like [Visual Studio Code](https://code.visualstudio.com/download)
 Please familiarise yourself with these tools before setting up your environment.
 
+
 ## Other resources
 The notebooks listed above provide a brief introduction to participants in our
 2023/2024 capacity building program.
